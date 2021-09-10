@@ -1,0 +1,11 @@
+{
+  "codeowners": ["@pbix"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/pbix/solark",
+  "domain": "solark",
+  "iot_class": "local_polling",
+  "name": "SolArk PV Inverter",
+  "requirements": [],
+  "version": "1.0.0"
+}

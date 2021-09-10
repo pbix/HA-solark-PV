@@ -1,0 +1,5 @@
+{
+  "name": "SolArk PV Inverter",
+  "render_readme": true,
+  "iot_class": "local_polling"
+}
