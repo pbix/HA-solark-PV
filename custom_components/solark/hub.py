@@ -13,7 +13,7 @@ from pymodbus.payload import BinaryPayloadDecoder
 from pymodbus.register_read_message import ReadHoldingRegistersResponse
 from voluptuous.validators import Number
 
-from .const import DEVICE_STATUSSES, FAULT_MESSAGES
+from .const import FAULT_MESSAGES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +37,17 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         )
 
         self._client = ModbusTcpClient(host=host, port=port, timeout=5)
+
+        #Modbus RTU will look like this.  Need a brave soul to create the 
+        #config flow for the serial port selection.
+        #self._client = ModbusSerialClient(method='rtu',
+        #                                  port=port,
+        #                                  baudrate=9600,
+        #                                  stopbits=1,
+        #                                  parity=No,
+        #                                  bytesize=8,
+        #                                  timeout=5)
+        
         self._lock = threading.Lock()
 
         self.inverter_data: dict = {}
@@ -78,9 +89,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             )
         except ConnectionException:
             _LOGGER.error("Reading realtime data failed! Inverter is unreachable.")
-            realtime_data["mpvmode"] = 0
-            realtime_data["mpvstatus"] = DEVICE_STATUSSES[0]
-            realtime_data["power"] = 0
+            realtime_data["faultmsg"] = "Inverter is unreachable."
 
         return {**self.inverter_data, **realtime_data}
 
@@ -102,12 +111,36 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
     def read_modbus_realtime_data(self) -> dict:
 
-        data = {}
+        #Setup to use the values from the last scan if we get no responses.
+        #data=self.data
+        data={}
+        updated=False
+
+        realtime_data = self._read_holding_registers(unit=1, address=60, count=21)
+        if not realtime_data.isError():
+
+            decoder = BinaryPayloadDecoder.fromRegisters(
+                realtime_data.registers, byteorder=Endian.Big, wordorder=Endian.Little
+            )
+
+            data["dailyinv_e"] = decoder.decode_16bit_int()/10.0 
+            decoder.skip_bytes(4)
+            data["totalinv_e"] = decoder.decode_32bit_uint()/10.0
+            decoder.skip_bytes(10)
+            data["daybattc_e"] = decoder.decode_16bit_uint()/10.0
+            data["daybattd_e"] = decoder.decode_16bit_uint()/10.0
+            decoder.skip_bytes(8)
+            data["dailygridbuy_e"] = decoder.decode_16bit_uint()/10.0
+            data["dailygridsell_e"] = decoder.decode_16bit_uint()/10.0
+            decoder.skip_bytes(2)
+            data["gridfreq"] = decoder.decode_16bit_uint()/100.0
+            updated=True
+
         realtime_data = self._read_holding_registers(unit=1, address=103, count=10)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
-                realtime_data.registers, byteorder=Endian.Big
+                realtime_data.registers, byteorder=Endian.Big, wordorder=Endian.Big
             )
 
             flt = decoder.decode_32bit_uint()                     #R103
@@ -115,11 +148,12 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
             data["faultmsg"] = self.translate_fault_code_to_messages(flt, FAULT_MESSAGES) 
             decoder.skip_bytes(2)
-            data["dailypv_e"] = decoder.decode_16bit_uint() 
-            data["pv1_v"] = decoder.decode_16bit_uint() 
-            data["pv1_c"] = decoder.decode_16bit_uint() 
-            data["pv2_v"] = decoder.decode_16bit_uint() 
-            data["pv2_c"] = decoder.decode_16bit_uint() 
+            data["dailypv_e"] = decoder.decode_16bit_uint()/10.0 
+            data["pv1_v"] = decoder.decode_16bit_uint()/10.0 
+            data["pv1_c"] = decoder.decode_16bit_uint()/10.0 
+            data["pv2_v"] = decoder.decode_16bit_uint()/10.0 
+            data["pv2_c"] = decoder.decode_16bit_uint()/10.0 
+            updated=True
 
 
         realtime_data = self._read_holding_registers(unit=1, address=150, count=21)
@@ -150,7 +184,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["gridl2_p"] = decoder.decode_16bit_int()
             data["grid_p"] = decoder.decode_16bit_int()
             data["gridlmtl1_p"] = decoder.decode_16bit_int()        #R170
-
+            updated=True
 
         realtime_data = self._read_holding_registers(unit=1, address=171, count=17)
         if not realtime_data.isError():
@@ -180,6 +214,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["pv1_p"] = pv1_p        
             data["pv2_p"] = pv2_p
             data["pv_p"] = pv1_p+pv2_p
+            updated=True
 
 
         realtime_data = self._read_holding_registers(unit=1, address=190, count=6)
@@ -190,8 +225,13 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             )
 
             data["batt_p"] = decoder.decode_16bit_int()          #R190
-            data["batt_c"] = decoder.decode_16bit_int()/100.0        
+            data["batt_c"] = decoder.decode_16bit_int()/100.0    
+            updated=True    
 
+
+        #If there was no response to any read request then return no data.
+        if not updated:
+           return {}
 
         return data
 

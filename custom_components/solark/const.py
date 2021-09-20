@@ -28,7 +28,6 @@ DOMAIN = "solark_modbus"
 DEFAULT_NAME = "SolArk"
 DEFAULT_SCAN_INTERVAL = 60
 DEFAULT_PORT = 502
-CONF_SOLARK_HUB = "solark_hub"
 ATTR_MANUFACTURER = "SolArk"
 
 
@@ -50,13 +49,74 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         icon="mdi:message-alert-outline",
     ),
 
+    "DailyInv_E": SolArkModbusSensorEntityDescription(
+        name="Daily Inverter Energy",
+        key="dailyinv_e",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+        entity_registry_enabled_default=False,
+    ),
+
     "DailyPV_E": SolArkModbusSensorEntityDescription(
         name="Daily PV Energy",
         key="dailypv_e",
-        native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
-        device_class=DEVICE_CLASS_VOLTAGE,
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+
+    ),
+
+    "DailyBattC_E": SolArkModbusSensorEntityDescription(
+        name="Daily Battery Charge Energy",
+        key="daybattc_e",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+
+    ),
+
+    "DailyBattD_E": SolArkModbusSensorEntityDescription(
+        name="Daily Battery Discharge Energy",
+        key="daybattd_e",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+
+    ),
+
+    "DailyGridBuy_E": SolArkModbusSensorEntityDescription(
+        name="Daily Grid Buy Energy",
+        key="dailygridbuy_e",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+
+    ),
+
+    "DailyGridSell_E": SolArkModbusSensorEntityDescription(
+        name="Daily Grid Sell Energy",
+        key="dailygridsell_e",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+
+    ),
+
+    "GridFreq": SolArkModbusSensorEntityDescription(
+        name="Grid Frequency",
+        key="gridfreq",
+        native_unit_of_measurement=FREQUENCY_HERTZ,
         state_class=STATE_CLASS_MEASUREMENT,
-        entity_registry_enabled_default=False,
+
+    ),
+
+    "TotalInv_E": SolArkModbusSensorEntityDescription(
+        name="Total PV Energy",
+        key="totalinv_e",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
     ),
 
     "PV1_V": SolArkModbusSensorEntityDescription(
@@ -466,13 +526,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         state_class=STATE_CLASS_MEASUREMENT,
     ),
 
-}
-
-DEVICE_STATUSSES = {
-    0: "Not Connected",
-    1: "Waiting",
-    2: "Normal",
-    3: "Error",
 }
 
 FAULT_MESSAGES = {
