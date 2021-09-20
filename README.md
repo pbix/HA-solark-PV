@@ -1,4 +1,4 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs) ![GitHub all releases](https://img.shields.io/github/downloads/pbix/HA-solark-PV/total.svg) ![License](https://img.shields.io/github/license/pbix/HA-solark-PV)]()
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs) ![GitHub all releases](https://img.shields.io/github/downloads/pbix/HA-solark-PV/total.svg) ![License](https://img.shields.io/github/license/pbix/HA-solark-PV)]
 # HA-solar-PV
 This integration utilizes the MODBUS interface of the Solark 12k inverter to allow local read-only
 access to inverter variables.  The integration does a direct MODBUS interface with your inverter.
