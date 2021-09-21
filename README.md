@@ -6,9 +6,9 @@ This integration utilizes the MODBUS interface of the Solark 12k inverter to all
 access to inverter variables.  The integration does a direct MODBUS interface with your inverter.
 
 ## Installation
-Using the HACS page add this repository to your installation.  Then under the configuration tab search for "SolArk Inverter Modbus" and install it.
-One device will be installed with many entities attached.  The entities map directly to registers in the inverter.  Not all registers are there and many are not enabled by default.
-Instead I have made the ones I feel are the most useful to be enabled by default.
+This is a HACS integration.  First get HACS up and running on your system https://hacs.xyz/docs/configuration/basic.  Then go to the HACS page and select the three dots in the upper right and then "custom repositories".  Enter https://github.com/pbix/HA-solark-PV and select "Integration".  The new repository will appear on the HACS page, select install on the card and restart.
+
+Finally head over to Configurations->Integrations->Add Integration and search for SolArk and setup.  If you have your system setup for Modbus/TCP just enter the IP address of your gateway and proceed.  One device will be installed with many entities attached.  The entities map directly to registers in the inverter.  Not all registers are there and many are not enabled by default.  Instead I have made the ones I feel are the most useful to be enabled by default.
 
 You can peruse and enable entities as you like but don't bother asking me what all these registers mean. 
 
