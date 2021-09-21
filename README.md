@@ -1,9 +1,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs) 
-![GitHub all releases](https://img.shields.io/github/downloads/pbix/HA-solark-PV/total.svg) 
-![License](https://img.shields.io/github/license/pbix/HA-solark-PV)
 # HA-solark-PV
-This integration utilizes the MODBUS interface of the Solark 12k inverter to allow local read-only
-access to inverter variables.  The integration does a direct MODBUS interface with your inverter.
+This integration utilizes the MODBUS interface of the Solark All-in-One invertera to allow local read-only
+access to inverter variables.  The integration does a direct MODBUS interface with your inverter.  I have tested with my own 12K Outdoor model but it should work with the other models (12k indoor, 8k and 5k) as well.
 
 ## Installation
 This is a HACS integration.  First get HACS up and running on your system https://hacs.xyz/docs/configuration/basic.  Then go to the HACS page and select the three dots in the upper right and then "custom repositories".  Enter https://github.com/pbix/HA-solark-PV and select "Integration".  The new repository will appear on the HACS page, select install on the card and restart.
