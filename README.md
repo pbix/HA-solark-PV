@@ -25,6 +25,8 @@ If you have another coverter model that can provide the same features it may wor
 to provide a TCP/IP gateway to convert your RTU signal to Modbus TCP/IP.  In my case I used an old OpenWRT capabile router with a USB connector on the back and installed the 
 excellect mbusd package which you can read about here: https://github.com/3cky/mbusd
 
+If you want to use Modbus/RTU here is a simple hack until I get the UI worked out (or someone helps me with it).  In the hub.py file, around line 39, comment the "ModbusTcpClient" open and uncomment the following line for "ModbusSerialClient" entering the name of your serial port (ie port="/dev/ttyUSB0").  Then save the file, delete the component, restart home assistant and re-install the component.
+
 In the future I hope others will help me to enhance this page to provide more details on the wiring and alternate methods to get your modbus traffic into your Home Assistant.
 
 
