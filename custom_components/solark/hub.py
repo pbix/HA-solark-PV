@@ -44,7 +44,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         #This logic is tested to work with linux and windows serial port names.
         if (parsed.port is None) and ((parsed.hostname is None) or (parsed.hostname[0:3] == "com" )):
             self._client = ModbusSerialClient(method='rtu',port=parsed.path+parsed.netloc,baudrate=9600,
-                                              stopbits=1,parity=None,bytesize=8,timeout=5)
+                                              stopbits=1,bytesize=8,timeout=5)
         else:
 
             if (parsed.port is None):
