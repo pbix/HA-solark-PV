@@ -4,9 +4,8 @@
       "user": {
         "title": "Define your SolArk Inverter modbus-connection",
         "data": {
-          "host": "The ip-address of your SolArk Inverter modbus device",
+          "host": "IP Address[:port] or serial device name. Default port=502",
           "name": "The prefix to be used for your SolArk Inverter sensors",
-          "port": "The TCP port on which to connect to the SolArk Inverter",
           "scan_interval": "The polling frequency of the modbus registers in seconds"
         }
       }

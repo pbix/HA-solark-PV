@@ -2,11 +2,12 @@
 from datetime import timedelta
 import logging
 import threading
+from urllib.parse import urlparse
 
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client.sync import ModbusSerialClient, ModbusTcpClient
 from pymodbus.constants import Endian
 from pymodbus.exceptions import ConnectionException
 from pymodbus.payload import BinaryPayloadDecoder
@@ -17,6 +18,7 @@ from .const import FAULT_MESSAGES
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
     """Thread safe wrapper class for pymodbus."""
 
@@ -24,8 +26,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         self,
         hass: HomeAssistantType,
         name: str,
-        host: str,
-        port: Number,
+        hostname: str,
         scan_interval: Number,
     ):
         """Initialize the Modbus hub."""
@@ -36,17 +37,23 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             update_interval=timedelta(seconds=scan_interval),
         )
 
-        self._client = ModbusTcpClient(host=host, port=port, timeout=5)
+        #Break the entered hostnames into its component parts.
+        parsed=urlparse(f'//{hostname}')
 
-        #Modbus RTU will look like this.  Need a brave soul to create the 
-        #config flow for the serial port selection.
-        #self._client = ModbusSerialClient(method='rtu',
-        #                                  port=port,
-        #                                  baudrate=9600,
-        #                                  stopbits=1,
-        #                                  parity=No,
-        #                                  bytesize=8,
-        #                                  timeout=5)
+        #If it not a URL it might be a serial port.
+        #This logic is tested to work with linux and windows serial port names.
+        if (parsed.port is None) and ((parsed.hostname is None) or (parsed.hostname[0:3] == "com" )):
+            self._client = ModbusSerialClient(method='rtu',port=parsed.path+parsed.netloc,baudrate=9600,
+                                              stopbits=1,parity=None,bytesize=8,timeout=5)
+        else:
+
+            if (parsed.port is None):
+                localport=502
+            else:
+                localport=parsed.port
+
+            self._client = ModbusTcpClient(host=parsed.hostname, port=localport, timeout=5)
+
         
         self._lock = threading.Lock()
 
