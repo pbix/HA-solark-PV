@@ -2,11 +2,11 @@
   "config": {
     "step": {
       "user": {
-        "title": "Define your SolArk Inverter modbus-connection",
+        "title": "Configure the Modbus Interface",
         "data": {
-          "host": "IP Address[:port] or serial device name. Default port=502",
-          "name": "The prefix to be used for your SolArk Inverter sensors",
-          "scan_interval": "The polling frequency of the modbus registers in seconds"
+          "host": "URL or serial port to query",
+          "name": "Sensor prefix used in HA",
+          "scan_interval": "Polling period in seconds"
         }
       }
     },
