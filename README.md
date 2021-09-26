@@ -25,12 +25,9 @@ This is a HACS integration.  First get HACS up and running on your system https:
 Finally head over to Configurations->Integrations->Add Integration and search for SolArk and setup.
 
 ## Configuration
-In the configuration dialog you specify a name, a host and an update rate.  The name is the name the integration will be known by in your home assistant.  The default is fine until you have more than one inverter in which case you need to assign unique names to each.  The host field is the target address needed to connect to your inverter.  For example 192.168.2.2 would use port 502 to connect to a Modbus TCP bridge which is connected serially to your SolArk.  For a non-standard port you can use port notation, 192.168.2.2:510 for example.  You can enter either a IP address or a hostname.  To connect via serial port directly you can also enter the name of your serial port device such as /dev/tty1 or COM1.  The update rate by default is 60 seconds.  You can change it to something lower but I have no idea what type of load this puts on your inverter, how fast you can go or what happens when you exceed the limit. 
+In the configuration dialog you specify a name, a host and an update rate.  The name is the name the integration will be known by in your home assistant.  The default is fine until you have more than one inverter in which case you need to assign unique names to each.  The host field is the target address needed to connect to your inverter.  For example 192.168.2.2 would use port 502 to connect to a Modbus TCP bridge which is connected serially to your SolArk.  For a non-standard port you can use port notation, 192.168.2.2:510 for example.  You can enter either a IP address or a hostname.  To connect via serial port directly you can also enter the name of your serial port device such as /dev/ttyUSB0 or COM1.  The update rate by default is 60 seconds.  You can change it to something lower but I have no idea what type of load this puts on your inverter, how fast you can go or what happens when you exceed the limit. 
 
 When you complete the configuration pages one device will be installed with many entities attached.  The entities map directly to registers in the inverter.  I have made the ones I feel are the most useful enabled by default.
-
-
-
 
 In the future I hope others will help me to enhance this page to provide more details on the wiring and alternate methods to get your modbus traffic into your Home Assistant.
 
