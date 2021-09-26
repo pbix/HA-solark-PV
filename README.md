@@ -13,8 +13,11 @@ I am using the DSD TECH SH-U11F USB-RS485 converter. This is available from mult
 
 If you have another USB-RS485 converter model that can provide the same features it may work as well.  But I do not recommend that you skimp on a converter because reliablility is important.  If you are able to plug the converter directly into your HA computer that will work great and requires the fewest number of parts in your system.  In my case my SolArk is remote from my HA box so I used an old OpenWRT capabile router with a USB connector on the back installed near my inverter loaded with the excellect mbusd package (https://github.com/3cky/mbusd).  This forms a Modbus TCP/IP gateway which I can access from my HA box and works very well.  There are many other methods to create a Modbus TCP/IP gateway, any anyone will work.
 
-##Testing
+## Testing
 Before you spend any time working with Home Assistant it is important to unit test your connection.  The best way to do this is with the excellent free modpoll utility you can find here: https://www.modbusdriver.com/modpoll.html.  Download the executable and test reading data from your inverter.  The screenshot below shows a successful result.  Let the command run for awhile and try different update rates to ensure you have a robust connection.  You can read different register ranges and try and figure out what they mean, don't bother to ask me because I don't know for sure.  One day I hope SolArk will relent and publish a list for us.
+<p align="center">
+	<img height="500" src="https://raw.githubusercontent.com/pbix/HA-solark-PV/master/imgs/modpoll.png">
+</p>
 
 ## Installation
 This is a HACS integration.  First get HACS up and running on your system https://hacs.xyz/docs/configuration/basic.  Then go to the HACS page and select the three dots in the upper right and then "custom repositories".  Enter https://github.com/pbix/HA-solark-PV and select "Integration".  The new repository will appear on the HACS page, select install on the card and restart.
