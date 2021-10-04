@@ -20,7 +20,7 @@ Before you spend any time working with Home Assistant it is important to unit te
 </p>
 
 ## Installation
-This is a HACS integration.  First get HACS up and running on your system https://hacs.xyz/docs/configuration/basic.  Then go to the HACS page and select the three dots in the upper right and then "custom repositories".  Enter https://github.com/pbix/HA-solark-PV and select "Integration".  The new repository will appear on the HACS page, select install on the card and restart.
+This is a HACS integration.  First get HACS up and running on your system https://hacs.xyz/docs/configuration/basic.  Then go to the HACS page and yes you must wait for the HACS install to complete.  Then HACS->Integrations and select the three dots in the upper right and then "custom repositories".  Enter https://github.com/pbix/HA-solark-PV and select "Integration".  The new repository will appear on the HACS page, select install on the card and restart.
 
 Finally head over to Configurations->Integrations->Add Integration and search for SolArk and setup.
 
