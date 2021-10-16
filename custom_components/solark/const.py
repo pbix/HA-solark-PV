@@ -159,7 +159,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
 
 
     "GridL1N_V": SolArkModbusSensorEntityDescription(
-        name="Grid L1-N voltage",
+        name="Grid L1-N Voltage",
         key="gridl1n_v",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
@@ -168,7 +168,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "GridL2N_V": SolArkModbusSensorEntityDescription(
-        name="Grid L2-N voltage",
+        name="Grid L2-N Voltage",
         key="gridl2n_v",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
@@ -176,7 +176,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         entity_registry_enabled_default=False,
     ),
     "GridL1L2_V": SolArkModbusSensorEntityDescription(
-        name="Grid L1-L2 voltage",
+        name="Grid L1-L2 Voltage",
         key="gridl1l2_v",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
@@ -184,7 +184,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         entity_registry_enabled_default=False,
     ),
     "GridRelay_V": SolArkModbusSensorEntityDescription(
-        name="Grid Relay voltage",
+        name="Grid Relay Voltage",
         key="gridrelay_v",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
@@ -192,7 +192,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         entity_registry_enabled_default=False,
     ),
     "InvL1N_V": SolArkModbusSensorEntityDescription(
-        name="Inverter L1-N voltage",
+        name="Inverter L1-N Voltage",
         key="invl1n_v",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
@@ -201,7 +201,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "InvL2N_V": SolArkModbusSensorEntityDescription(
-        name="Inverter L2-N voltage",
+        name="Inverter L2-N Voltage",
         key="invl2n_v",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
@@ -210,7 +210,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "InvL1L2_V": SolArkModbusSensorEntityDescription(
-        name="Inverter L1-L2 voltage",
+        name="Inverter L1-L2 Voltage",
         key="invl1l2_v",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
@@ -219,7 +219,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "LoadL1N_V": SolArkModbusSensorEntityDescription(
-        name="Load L1-N voltage",
+        name="Load L1-N Voltage",
         key="loadl1n_v",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
@@ -228,7 +228,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "LoadL2N_V": SolArkModbusSensorEntityDescription(
-        name="Load L2-N voltage",
+        name="Load L2-N Voltage",
         key="loadl2n_v",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
@@ -236,7 +236,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         entity_registry_enabled_default=False,
     ),
     "GridL1_C": SolArkModbusSensorEntityDescription(
-        name="Grid L1 current",
+        name="Grid L1 Current",
         key="gridl1_c",
         native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
         icon="mdi:current-ac",
@@ -246,7 +246,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "GridL2_C": SolArkModbusSensorEntityDescription(
-        name="Grid L2 current",
+        name="Grid L2 Current",
         key="gridl2_c",
         native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
         icon="mdi:current-ac",
@@ -256,7 +256,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "ExtLmtL1_C": SolArkModbusSensorEntityDescription(
-        name="External Lmt L1 current",
+        name="External Lmt L1 Current",
         key="extlmtl1_c",
         native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
         icon="mdi:current-ac",
@@ -266,7 +266,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "ExtLmtL2_C": SolArkModbusSensorEntityDescription(
-        name="External Lmt L2 current",
+        name="External Lmt L2 Current",
         key="extlmtl2_c",
         native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
         icon="mdi:current-ac",
@@ -276,7 +276,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "InvL1_C": SolArkModbusSensorEntityDescription(
-        name="Inverter L1 current",
+        name="Inverter L1 Current",
         key="invl1_c",
         native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
         icon="mdi:current-ac",
@@ -286,7 +286,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "InvL2_C": SolArkModbusSensorEntityDescription(
-        name="Inverter L2 current",
+        name="Inverter L2 Current",
         key="invl2_c",
         native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
         icon="mdi:current-ac",
@@ -296,7 +296,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "Gen_P": SolArkModbusSensorEntityDescription(
-        name="Gen power",
+        name="Gen Power",
         key="gen_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -305,7 +305,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "GridL1_P": SolArkModbusSensorEntityDescription(
-        name="Grid L1 power",
+        name="Grid L1 Power",
         key="gridl1_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -316,7 +316,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
 
 
     "GridL2_P": SolArkModbusSensorEntityDescription(
-        name="Grid L2 power",
+        name="Grid L2 Power",
         key="gridl2_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -326,7 +326,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "Grid_P": SolArkModbusSensorEntityDescription(
-        name="Total Grid power",
+        name="Total Grid Power",
         key="grid_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -335,7 +335,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "GridLmtL1_P": SolArkModbusSensorEntityDescription(
-        name="Grid Limiter L1 power",
+        name="Grid Limiter L1 Power",
         key="gridlmtl1_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -345,7 +345,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "GridLmtL2_P": SolArkModbusSensorEntityDescription(
-        name="Grid Limiter L2 power",
+        name="Grid Limiter L2 Power",
         key="gridlmtl2_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -355,7 +355,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "GridExt_P": SolArkModbusSensorEntityDescription(
-        name="Grid External total power",
+        name="Grid External total Power",
         key="gridext_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -365,7 +365,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
   ),
 
     "InvL1_P": SolArkModbusSensorEntityDescription(
-        name="Inverter L1 power",
+        name="Inverter L1 Power",
         key="invl1_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -374,7 +374,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "InvL2_P": SolArkModbusSensorEntityDescription(
-        name="Inverter L2 power",
+        name="Inverter L2 Power",
         key="invl2_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -383,7 +383,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "Inv_P": SolArkModbusSensorEntityDescription(
-        name="Inverter power",
+        name="Inverter Power",
         key="inv_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -392,7 +392,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "LoadL1_P": SolArkModbusSensorEntityDescription(
-        name="Load L1 power",
+        name="Load L1 Power",
         key="loadl1_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -402,7 +402,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "LoadL2_P": SolArkModbusSensorEntityDescription(
-        name="Load L2 power",
+        name="Load L2 Power",
         key="loadl2_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -412,7 +412,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "Load_P": SolArkModbusSensorEntityDescription(
-        name="Load power",
+        name="Load Power",
         key="load_p",
         native_unit_of_measurement=POWER_WATT,
         icon="mdi:solar-power",
@@ -421,7 +421,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "LoadL1_C": SolArkModbusSensorEntityDescription(
-        name="Load L1 current",
+        name="Load L1 Current",
         key="loadl1_c",
         native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
         icon="mdi:current-ac",
@@ -431,7 +431,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "LoadL2_C": SolArkModbusSensorEntityDescription(
-        name="Load L2 current",
+        name="Load L2 Current",
         key="loadl2_c",
         native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
         icon="mdi:current-ac",
@@ -441,7 +441,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "GenL1L2_V": SolArkModbusSensorEntityDescription(
-        name="Generator L1-L2 voltage",
+        name="Generator L1-L2 Voltage",
         key="genl1l2_v",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
@@ -450,7 +450,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "BattTempC": SolArkModbusSensorEntityDescription(
-        name="Battery temperature",
+        name="Battery Temperature",
         key="batttempc",
         native_unit_of_measurement=TEMP_CELSIUS,
         device_class=DEVICE_CLASS_TEMPERATURE,
@@ -459,7 +459,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "Batt_v": SolArkModbusSensorEntityDescription(
-        name="Battery voltage",
+        name="Battery Voltage",
         key="batt_v",
         icon="mdi:battery",
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
@@ -469,7 +469,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "Batt_SOC": SolArkModbusSensorEntityDescription(
-        name="Battery State Of Charge",
+        name="Battery State of Charge",
         key="batt_soc",
         icon="mdi:battery-50",
         native_unit_of_measurement=PERCENTAGE,
@@ -518,7 +518,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 
     "Batt_C": SolArkModbusSensorEntityDescription(
-        name="Battery current",
+        name="Battery Current",
         key="batt_c",
         native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
         icon="mdi:current-dc",
