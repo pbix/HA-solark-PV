@@ -503,7 +503,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         icon="mdi:solar-power",
         device_class=DEVICE_CLASS_POWER,
         state_class=STATE_CLASS_MEASUREMENT,
-        entity_registry_enabled_default=True,
     ),
 
     "Batt_C": SolArkModbusSensorEntityDescription(
@@ -518,8 +517,8 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     "Update_Cnt": SolArkModbusSensorEntityDescription(
         name="Update Counter",
         key="update_cnt",
+        state_class=STATE_CLASS_TOTAL,
         entity_registry_enabled_default=False,
-
     ),
 }
 
