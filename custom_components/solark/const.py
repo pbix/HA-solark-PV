@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from homeassistant.components.sensor import (
     STATE_CLASS_MEASUREMENT,
     STATE_CLASS_TOTAL_INCREASING,
+    STATE_CLASS_TOTAL,
     SensorEntityDescription,
 )
 from homeassistant.const import (
