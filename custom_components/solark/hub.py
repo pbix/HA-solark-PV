@@ -18,6 +18,7 @@ from .const import FAULT_MESSAGES
 
 _LOGGER = logging.getLogger(__name__)
 
+update_cnt=0
 
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
     """Thread safe wrapper class for pymodbus."""
@@ -118,8 +119,6 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
     def read_modbus_realtime_data(self) -> dict:
 
-        #Setup to use the values from the last scan if we get no responses.
-        #data=self.data
         data={}
         updated=False
 
@@ -239,6 +238,15 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         #If there was no response to any read request then return no data.
         if not updated:
            return {}
+           
+        #Update the global counter   
+        global update_cnt
+        update_cnt = update_cnt+1
+        if (update_cnt >= 65535):
+           update_cnt=0
+           
+        data["update_cnt"]=update_cnt
+        
 
         return data
 

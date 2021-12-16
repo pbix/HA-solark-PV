@@ -64,7 +64,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
-
     ),
 
     "DailyBattC_E": SolArkModbusSensorEntityDescription(
@@ -73,7 +72,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
-
     ),
 
     "DailyBattD_E": SolArkModbusSensorEntityDescription(
@@ -82,7 +80,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
-
     ),
 
     "DailyGridBuy_E": SolArkModbusSensorEntityDescription(
@@ -91,7 +88,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
-
     ),
 
     "DailyGridSell_E": SolArkModbusSensorEntityDescription(
@@ -100,7 +96,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
         device_class=DEVICE_CLASS_ENERGY,
         state_class=STATE_CLASS_TOTAL_INCREASING,
-
     ),
 
     "GridFreq": SolArkModbusSensorEntityDescription(
@@ -108,7 +103,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         key="gridfreq",
         native_unit_of_measurement=FREQUENCY_HERTZ,
         state_class=STATE_CLASS_MEASUREMENT,
-
     ),
 
     "TotalInv_E": SolArkModbusSensorEntityDescription(
@@ -215,7 +209,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
         state_class=STATE_CLASS_MEASUREMENT,
-        entity_registry_enabled_default=False,
     ),
 
     "LoadL1N_V": SolArkModbusSensorEntityDescription(
@@ -465,7 +458,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
         device_class=DEVICE_CLASS_VOLTAGE,
         state_class=STATE_CLASS_MEASUREMENT,
-        entity_registry_enabled_default=False,
     ),
 
     "Batt_SOC": SolArkModbusSensorEntityDescription(
@@ -473,7 +465,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         key="batt_soc",
         icon="mdi:battery-50",
         native_unit_of_measurement=PERCENTAGE,
-        device_class=DEVICE_CLASS_POWER,
         state_class=STATE_CLASS_MEASUREMENT,
         entity_registry_enabled_default=False,
     ),
@@ -485,7 +476,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         icon="mdi:solar-power",
         device_class=DEVICE_CLASS_POWER,
         state_class=STATE_CLASS_MEASUREMENT,
-        entity_registry_enabled_default=False,
     ),
 
     "PV2_P": SolArkModbusSensorEntityDescription(
@@ -495,7 +485,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         icon="mdi:solar-power",
         device_class=DEVICE_CLASS_POWER,
         state_class=STATE_CLASS_MEASUREMENT,
-        entity_registry_enabled_default=False,
     ),
 
     "PV_P": SolArkModbusSensorEntityDescription(
@@ -526,6 +515,12 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         state_class=STATE_CLASS_MEASUREMENT,
     ),
 
+    "Update_Cnt": SolArkModbusSensorEntityDescription(
+        name="Update Counter",
+        key="update_cnt",
+        entity_registry_enabled_default=False,
+
+    ),
 }
 
 FAULT_MESSAGES = {
