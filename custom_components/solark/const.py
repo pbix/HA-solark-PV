@@ -106,6 +106,14 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         state_class=STATE_CLASS_MEASUREMENT,
     ),
 
+    "TotalGrid_E": SolArkModbusSensorEntityDescription(
+        name="Total Grid Breaker Energy",
+        key="totalgrid_e",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=DEVICE_CLASS_ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+    ),
+
     "TotalInv_E": SolArkModbusSensorEntityDescription(
         name="Total PV Energy",
         key="totalinv_e",

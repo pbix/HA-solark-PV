@@ -131,7 +131,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
             data["dailyinv_e"] = decoder.decode_16bit_int()/10.0 
             decoder.skip_bytes(4)
-            data["totalinv_e"] = decoder.decode_32bit_uint()/10.0
+            data["totalgrid_e"] = decoder.decode_32bit_int()/10.0
             decoder.skip_bytes(10)
             data["daybattc_e"] = decoder.decode_16bit_uint()/10.0
             data["daybattd_e"] = decoder.decode_16bit_uint()/10.0
@@ -142,18 +142,22 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["gridfreq"] = decoder.decode_16bit_uint()/100.0
             updated=True
 
-        realtime_data = self._read_holding_registers(unit=1, address=103, count=10)
+        realtime_data = self._read_holding_registers(unit=1, address=96, count=21)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
-                realtime_data.registers, byteorder=Endian.Big, wordorder=Endian.Big
+                realtime_data.registers, byteorder=Endian.Big, wordorder=Endian.Little
             )
 
-            flt = decoder.decode_32bit_uint()                     #R103
+            data["totalinv_e"] = decoder.decode_32bit_int()/10.0   #R98
+            decoder.skip_bytes(10)
+
+            flt = decoder.decode_32bit_uint()                      #R103
             flt = flt + decoder.decode_32bit_uint()*2**32
 
             data["faultmsg"] = self.translate_fault_code_to_messages(flt, FAULT_MESSAGES) 
             decoder.skip_bytes(2)
+            
             data["dailypv_e"] = decoder.decode_16bit_uint()/10.0 
             data["pv1_v"] = decoder.decode_16bit_uint()/10.0 
             data["pv1_c"] = decoder.decode_16bit_uint()/10.0 
