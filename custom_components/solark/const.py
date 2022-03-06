@@ -27,7 +27,7 @@ from homeassistant.const import (
 
 DOMAIN = "solark_modbus"
 DEFAULT_NAME = "SolArk"
-DEFAULT_SCAN_INTERVAL = 60
+DEFAULT_SCAN_INTERVAL = 20
 DEFAULT_PORT = 502
 ATTR_MANUFACTURER = "SolArk"
 
