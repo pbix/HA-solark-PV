@@ -270,6 +270,6 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
         #In case a bit is set that we do not understand
         if not messages:
-            messages = "Fault Code: "+hex(code)
+            messages = "Fault Code: "+hex(fault_code)
 
         return messages
