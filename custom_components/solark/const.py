@@ -4,8 +4,10 @@ from homeassistant.components.sensor import (
     STATE_CLASS_MEASUREMENT,
     STATE_CLASS_TOTAL_INCREASING,
     STATE_CLASS_TOTAL,
+    SensorDeviceClass,
     SensorEntityDescription,
 )
+
 from homeassistant.const import (
     ELECTRIC_CURRENT_AMPERE,
     ELECTRIC_CURRENT_MILLIAMPERE,
