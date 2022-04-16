@@ -149,8 +149,8 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
                 realtime_data.registers, byteorder=Endian.Big, wordorder=Endian.Little
             )
 
-            data["dailyload_e"] = decoder.decode_16bit_uint()/10.0    #R84
-            data["totalload_e"] = decoder.decode_32bit_int()/10.0     #R85
+            data["dailyload_e"] = decoder.decode_16bit_uint()/10.0    #R84 power through the breaker labeled "Load" on the inverter
+            data["totalload_e"] = decoder.decode_32bit_uint()/10.0     #R85 power through the breaker labeled "Load" on the inverter
             updated=True
 
 
