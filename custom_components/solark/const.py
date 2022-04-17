@@ -94,11 +94,27 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         state_class=STATE_CLASS_TOTAL_INCREASING,
     ),
 
+    "DailyLoad_E": SolArkModbusSensorEntityDescription(
+        name="Daily Load Energy",
+        key="dailyload_e",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=STATE_CLASS_TOTAL_INCREASING,
+    ),
+
     "GridFreq": SolArkModbusSensorEntityDescription(
         name="Grid Frequency",
         key="gridfreq",
         native_unit_of_measurement=FREQUENCY_HERTZ,
         state_class=STATE_CLASS_MEASUREMENT,
+    ),
+
+    "TotalLoad_E": SolArkModbusSensorEntityDescription(
+        name="Total Load Energy",
+        key="totalload_e",
+        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=STATE_CLASS_TOTAL,
     ),
 
     "TotalGrid_E": SolArkModbusSensorEntityDescription(

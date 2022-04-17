@@ -142,6 +142,18 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["gridfreq"] = decoder.decode_16bit_uint()/100.0
             updated=True
 
+        realtime_data = self._read_holding_registers(unit=1, address=84, count=3)
+        if not realtime_data.isError():
+
+            decoder = BinaryPayloadDecoder.fromRegisters(
+                realtime_data.registers, byteorder=Endian.Big, wordorder=Endian.Little
+            )
+
+            data["dailyload_e"] = decoder.decode_16bit_uint()/10.0    #R84 power through the breaker labeled "Load" on the inverter
+            data["totalload_e"] = decoder.decode_32bit_uint()/10.0     #R85 power through the breaker labeled "Load" on the inverter
+            updated=True
+
+
         realtime_data = self._read_holding_registers(unit=1, address=96, count=21)
         if not realtime_data.isError():
 
