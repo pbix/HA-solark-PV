@@ -171,6 +171,24 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         entity_registry_enabled_default=False,
     ),
 
+    "PV3_V": SolArkModbusSensorEntityDescription(
+        name="PV3 Voltage",
+        key="pv3_v",
+        native_unit_of_measurement=ELECTRIC_POTENTIAL_VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=STATE_CLASS_MEASUREMENT,
+        entity_registry_enabled_default=False,
+    ),
+
+    "PV3_C": SolArkModbusSensorEntityDescription(
+        name="PV3 Current",
+        key="pv3_c",
+        native_unit_of_measurement=ELECTRIC_CURRENT_AMPERE,
+        icon="mdi:current-dc",
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=STATE_CLASS_MEASUREMENT,
+        entity_registry_enabled_default=False,
+    ),
 
     "GridL1N_V": SolArkModbusSensorEntityDescription(
         name="Grid L1-N Voltage",
