@@ -208,7 +208,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["gridlmtl1_p"] = decoder.decode_16bit_int()        #R170
             updated=True
 
-        realtime_data = self._read_holding_registers(unit=1, address=171, count=17)
+        realtime_data = self._read_holding_registers(unit=1, address=171, count=18)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -233,9 +233,11 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             decoder.skip_bytes(2)
             pv1_p = decoder.decode_16bit_uint()        
             pv2_p = decoder.decode_16bit_uint()       
+            pv3_p = decoder.decode_16bit_uint()
             data["pv1_p"] = pv1_p        
             data["pv2_p"] = pv2_p
-            data["pv_p"] = pv1_p+pv2_p
+            data["pv3_p"] = pv3_p
+            data["pv_p"] = pv1_p+pv2_p+pv3_p;
             updated=True
 
 

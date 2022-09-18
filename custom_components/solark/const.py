@@ -507,6 +507,15 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         state_class=STATE_CLASS_MEASUREMENT,
     ),
 
+    "PV3_P": SolArkModbusSensorEntityDescription(
+        name="PV3 Input Power",
+        key="pv3_p",
+        native_unit_of_measurement=POWER_WATT,
+        icon="mdi:solar-power",
+        device_class=SensorDeviceClass.POWER,
+        state_class=STATE_CLASS_MEASUREMENT,
+    ),
+
     "PV_P": SolArkModbusSensorEntityDescription(
         name="PV Input Power",
         key="pv_p",
