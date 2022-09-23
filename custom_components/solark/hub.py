@@ -175,6 +175,8 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["pv1_c"] = decoder.decode_16bit_uint()/10.0 
             data["pv2_v"] = decoder.decode_16bit_uint()/10.0 
             data["pv2_c"] = decoder.decode_16bit_uint()/10.0 
+            data["pv3_v"] = decoder.decode_16bit_uint()/10.0
+            data["pv3_c"] = decoder.decode_16bit_uint()/10.0
             updated=True
 
 
