@@ -2,12 +2,12 @@
 from datetime import timedelta
 import logging
 import threading
+import pymodbus
 from urllib.parse import urlparse
 
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from pymodbus.client.sync import ModbusSerialClient, ModbusTcpClient
 from pymodbus.constants import Endian
 from pymodbus.exceptions import ConnectionException
 from pymodbus.payload import BinaryPayloadDecoder
@@ -19,6 +19,7 @@ from .const import FAULT_MESSAGES
 _LOGGER = logging.getLogger(__name__)
 
 update_cnt=0
+unit_str=''
 
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
     """Thread safe wrapper class for pymodbus."""
@@ -37,6 +38,17 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             name=name,
             update_interval=timedelta(seconds=scan_interval),
         )
+        
+        #There is a breaking change in pymodbus starting with version 3.0.0
+        #HomeAssistant switched to pymodbus v3.1.1 starting at 2023.2.  The
+        #below code makes sure that this integration will work with either version
+        #of pymodbus.
+        if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
+           from pymodbus.client.sync import ModbusSerialClient,ModbusTcpClient
+           unit_str="unit"
+        else:
+           from pymodbus.client import ModbusSerialClient,ModbusTcpClient
+           unit_str="slave"
 
         #Break the entered hostnames into its component parts.
         parsed=urlparse(f'//{hostname}')
@@ -80,7 +92,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
     ) -> ReadHoldingRegistersResponse:
         """Read holding registers."""
         with self._lock:
-            kwargs = {"unit": unit} if unit else {}
+            kwargs = {unit_str: unit} if unit else {}
             return self._client.read_holding_registers(address, count, **kwargs)
 
     async def _async_update_data(self) -> dict:
