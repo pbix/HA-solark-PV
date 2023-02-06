@@ -2,12 +2,12 @@
 from datetime import timedelta
 import logging
 import threading
+import pymodbus
 from urllib.parse import urlparse
 
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from pymodbus.client.sync import ModbusSerialClient, ModbusTcpClient
 from pymodbus.constants import Endian
 from pymodbus.exceptions import ConnectionException
 from pymodbus.payload import BinaryPayloadDecoder
@@ -22,7 +22,7 @@ update_cnt=0
 
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
     """Thread safe wrapper class for pymodbus."""
-
+    
     def __init__(
         self,
         hass: HomeAssistantType,
@@ -40,6 +40,16 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
         #Break the entered hostnames into its component parts.
         parsed=urlparse(f'//{hostname}')
+        
+        #There is a breaking change in pymodbus starting with version 3.0.0
+        #HomeAssistant switched to pymodbus v3.1.1 starting at 2023.2.  The
+        #below code makes sure that this integration will work with either version
+        #of pymodbus.
+        if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
+           from pymodbus.client.sync import ModbusTcpClient, ModbusSerialClient
+        else:
+           from pymodbus.client import ModbusTcpClient, ModbusSerialClient
+
 
         #If it not a URL it might be a serial port.
         #This logic is tested to work with linux and windows serial port names.
@@ -57,7 +67,6 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
         
         self._lock = threading.Lock()
-
         self.inverter_data: dict = {}
         self.data: dict = {}
 
@@ -79,8 +88,14 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         self, unit, address, count
     ) -> ReadHoldingRegistersResponse:
         """Read holding registers."""
+
         with self._lock:
-            kwargs = {"unit": unit} if unit else {}
+            
+            if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
+                kwargs = {"unit": unit}
+            else:
+                kwargs = {"slave": unit}
+
             return self._client.read_holding_registers(address, count, **kwargs)
 
     async def _async_update_data(self) -> dict:
@@ -289,3 +304,4 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             messages = "Fault Code: "+hex(fault_code)
 
         return messages
+
