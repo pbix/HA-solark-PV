@@ -15,6 +15,8 @@ If you have another USB-RS485 converter model that can provide the same features
 ## Testing
 Before you spend any time working with Home Assistant it is important to unit test your connection.  The best way to do this is with the excellent free modpoll utility you can find here: https://www.modbusdriver.com/modpoll.html.  Download the executable and test reading data from your inverter.  The screenshot below shows a successful result.  Let the command run for awhile and try different update rates to ensure you have a robust connection.  SolArk has published a modbus map of the available registers.  YOu can download this from their website.
 
+<code>modpoll -0 -r 150 -c 20 192.168.2.2</code>
+
 <p align="center">
 	<img height="500" src="https://raw.githubusercontent.com/pbix/HA-solark-PV/master/imgs/modpoll.png">
 </p>
