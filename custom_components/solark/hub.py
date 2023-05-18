@@ -267,7 +267,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
             data["batt_p"] = decoder.decode_16bit_int()          #R190
             data["batt_c"] = decoder.decode_16bit_int()/100.0    
-            decoder.skip_bytes(2)
+            decoder.skip_bytes(4)
             data["grid_rly"] = decoder.decode_bits()
             updated=True    
 
