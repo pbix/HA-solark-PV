@@ -165,7 +165,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             )
 
             data["dailyload_e"] = decoder.decode_16bit_uint()/10.0    #R84 power through the breaker labeled "Load" on the inverter
-            data["totalload_e"] = decoder.decode_32bit_uint()/10.0     #R85 power through the breaker labeled "Load" on the inverter
+            data["totalload_e"] = decoder.decode_32bit_uint()/10.0    #R85 power through the breaker labeled "Load" on the inverter
             updated=True
 
 
@@ -267,6 +267,8 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
             data["batt_p"] = decoder.decode_16bit_int()          #R190
             data["batt_c"] = decoder.decode_16bit_int()/100.0    
+            decoder.skip_bytes(4)
+            data["grid_rly"] = 'Closed' if decoder.decode_16bit_int() == 1 else 'Open'
             updated=True    
 
 

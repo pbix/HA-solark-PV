@@ -567,6 +567,11 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         state_class=STATE_CLASS_TOTAL,
         entity_registry_enabled_default=False,
     ),
+    "Grid_Rly": SolArkModbusSensorEntityDescription(
+        name="Grid Relay",
+        key="grid_rly",
+        entity_registry_enabled_default=False,
+    ),
 }
 
 FAULT_MESSAGES = {
