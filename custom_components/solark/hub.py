@@ -64,6 +64,9 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
             self._client = ModbusTcpClient(host=parsed.hostname, port=localport, timeout=5)
 
+        #Make a connection request since for some reasons pymodbus v3.5.0 no longer automatically does this for us.
+        #Looks like it is fixed in v3.5.2 but who wants to wait.
+        self._client.connect()
         
         self._lock = threading.Lock()
         self.inverter_data: dict = {}
@@ -135,11 +138,6 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
         data={}
         updated=False
-
-        #Make a connection request since for some reasons pymodbus v3.5.0 no longer automatically does this for us.
-        #Looks like it is fixed in v3.5.2 but who wants to wait.
-        if not self._client.connected:
-            self._client.connect()
 
         realtime_data = self._read_holding_registers(unit=1, address=60, count=21)
         if not realtime_data.isError():
