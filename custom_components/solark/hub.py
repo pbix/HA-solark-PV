@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from pymodbus.constants import Endian
 from pymodbus.exceptions import ConnectionException
 from pymodbus.payload import BinaryPayloadDecoder
 from pymodbus.register_read_message import ReadHoldingRegistersResponse
@@ -125,7 +124,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
         data = {}
         decoder = BinaryPayloadDecoder.fromRegisters(
-            inverter_data.registers, byteorder=Endian.Big
+            inverter_data.registers, byteorder='>'
         )
 
         data["sn"] = decoder.decode_string(10).decode("ascii")
@@ -137,11 +136,16 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         data={}
         updated=False
 
+        #Make a connection request since for some reasons pymodbus v3.5.0 no longer automatically does this for us.
+        #Looks like it is fixed in v3.5.2 but who wants to wait.
+        if not self._client.connected:
+            self._client.connect()
+
         realtime_data = self._read_holding_registers(unit=1, address=60, count=21)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
-                realtime_data.registers, byteorder=Endian.Big, wordorder=Endian.Little
+                realtime_data.registers, byteorder='>', wordorder='<'
             )
 
             data["dailyinv_e"] = decoder.decode_16bit_int()/10.0 
@@ -161,7 +165,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
-                realtime_data.registers, byteorder=Endian.Big, wordorder=Endian.Little
+                realtime_data.registers, byteorder='>', wordorder='<'
             )
 
             data["dailyload_e"] = decoder.decode_16bit_uint()/10.0    #R84 power through the breaker labeled "Load" on the inverter
@@ -173,7 +177,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
-                realtime_data.registers, byteorder=Endian.Big, wordorder=Endian.Little
+                realtime_data.registers, byteorder='>', wordorder='<'
             )
 
             data["totalinv_e"] = decoder.decode_32bit_int()/10.0   #R98
@@ -199,7 +203,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
-                realtime_data.registers, byteorder=Endian.Big
+                realtime_data.registers, byteorder='>'
             )
 
             data["gridl1n_v"] = decoder.decode_16bit_uint()/10.0    #R150
@@ -229,7 +233,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
-                realtime_data.registers, byteorder=Endian.Big
+                realtime_data.registers, byteorder='>'
             )
 
 
@@ -262,7 +266,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
-                realtime_data.registers, byteorder=Endian.Big
+                realtime_data.registers, byteorder='>'
             )
 
             data["batt_p"] = decoder.decode_16bit_int()          #R190
