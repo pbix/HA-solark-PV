@@ -23,7 +23,7 @@ Before you spend any time working with Home Assistant it is important to unit te
 On your inverter's basic setup screen under the parrallel tab there may be a entry for the slave drop number "SN".  This must be set to "01" for the modbus connection to function.  This setting appears in newer versions of firmware so if you do not see it then you do not need to set it as the default was correct before.
 
 ## Installation
-This is a HACS integration.  First get HACS up and running on your system https://hacs.xyz/docs/configuration/basic.  Then go to the HACS page and yes you must wait for the HACS install to complete.  Then HACS->Integrations and select the three dots in the upper right and then "custom repositories".  At the bottom of the next "custom repositories list" enter https://github.com/pbix/HA-solark-PV and select "Integration" and finally "Add".  The new repository will appear on the HACS page, select install on the card and restart home assistant.
+This is a HACS integration.  First get HACS up and running on your system https://hacs.xyz/docs/configuration/basic.  Then go to the HACS page and yes you must wait for the HACS install to complete.  Then HACS->Integrations and select the three dots in the upper right and then "custom repositories".  At the bottom of the next "custom repositories list" enter https://github.com/pbix/HA-solark-PV and select "Integration" and finally "Add".  On the HACS page download the SolArk repository and restart.
 
 Finally head over to Settings->Integrations->Add Integration and search for SolArk and setup.
 
