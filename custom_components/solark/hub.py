@@ -50,17 +50,22 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         else:
            from pymodbus.client import ModbusTcpClient, ModbusSerialClient
 
-        #See if a valid, non-default slave number was specified
-        if (parsed.params) and isdigit(parsed.params) and (int(parsed.params) > 1) and (int(parsed.params) < 256):
-            slaveno = int(parsed.params)
-
-        #If it not a URL it might be a serial port.
-        #This logic is tested to work with linux and windows serial port names.
+        #If it not a proper URL it might be a serial port.
+        #This logic is tested to work with linux and windows serial port names, port numbers and slaveIDs
+        #Tested URLs:
+        #  192.168.2.2
+        #  192.268.2.2:502
+        #  192.168.2.2:502/;3
+        #  192.168.2.2/;3
+        #  /dev/ttyUSB0
+        #  /dev/ttyUDB0/;3
+        #  COM1
+        #  COM1/;3
+        #
         if (parsed.port is None) and ((parsed.hostname is None) or (parsed.hostname[0:3] == "com" )):
-            self._client = ModbusSerialClient(method='rtu',port=parsed.path+parsed.netloc,baudrate=9600,
+            self._client = ModbusSerialClient(method='rtu',port=parsed.path.rstrip('/')+parsed.netloc,baudrate=9600,
                                               stopbits=1,bytesize=8,timeout=5)
         else:
-
             if (parsed.port is None):
                 localport=502
             else:
@@ -68,6 +73,10 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
             self._client = ModbusTcpClient(host=parsed.hostname, port=localport, timeout=5)
 
+        #See if a valid, non-default slave number was specified
+        if (parsed.params) and isdigit(parsed.params) and (int(parsed.params) > 1) and (int(parsed.params) < 256):
+            slaveno = int(parsed.params)
+            
         #Make a connection request since for some reasons pymodbus v3.5.0 no longer automatically does this for us.
         #Looks like it is fixed in v3.5.2 but who wants to wait.
         self._client.connect()
