@@ -20,9 +20,6 @@ _LOGGER = logging.getLogger(__name__)
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
     """Thread safe wrapper class for pymodbus."""
 
-    update_cnt = 0
-    slaveno = 1
-    
     def __init__(
         self,
         hass: HomeAssistantType,
@@ -38,6 +35,9 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             update_interval=timedelta(seconds=scan_interval),
         )
 
+        self.slaveno=1
+        self.update_cnt=0
+        
         #Break the entered hostnames into its component parts.
         parsed=urlparse(f'//{hostname}')
         
