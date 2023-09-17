@@ -17,10 +17,11 @@ from .const import FAULT_MESSAGES
 
 _LOGGER = logging.getLogger(__name__)
 
-update_cnt=0
-
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
     """Thread safe wrapper class for pymodbus."""
+
+    update_cnt = 0
+    slaveno = 1
     
     def __init__(
         self,
@@ -49,6 +50,9 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         else:
            from pymodbus.client import ModbusTcpClient, ModbusSerialClient
 
+        #See if a valid, non-default slave number was specified
+        if (parsed.params) and isdigit(parsed.params) and (int(parsed.params) > 1) and (int(parsed.params) < 256):
+            slaveno = int(parsed.params)
 
         #If it not a URL it might be a serial port.
         #This logic is tested to work with linux and windows serial port names.
@@ -120,7 +124,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
     def read_modbus_inverter_data(self) -> dict:
 
-        inverter_data = self._read_holding_registers(unit=1, address=3, count=5)
+        inverter_data = self._read_holding_registers(unit=self.slaveno, address=3, count=5)
 
         if inverter_data.isError():
             return {}
@@ -139,7 +143,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         data={}
         updated=False
 
-        realtime_data = self._read_holding_registers(unit=1, address=60, count=21)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=60, count=21)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -159,7 +163,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["gridfreq"] = decoder.decode_16bit_uint()/100.0
             updated=True
 
-        realtime_data = self._read_holding_registers(unit=1, address=84, count=3)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=84, count=3)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -171,7 +175,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated=True
 
 
-        realtime_data = self._read_holding_registers(unit=1, address=96, count=21)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=96, count=21)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -197,7 +201,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated=True
 
 
-        realtime_data = self._read_holding_registers(unit=1, address=150, count=21)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=150, count=21)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -227,7 +231,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["gridlmtl1_p"] = decoder.decode_16bit_int()        #R170
             updated=True
 
-        realtime_data = self._read_holding_registers(unit=1, address=171, count=18)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=171, count=18)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -260,7 +264,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated=True
 
 
-        realtime_data = self._read_holding_registers(unit=1, address=190, count=6)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=190, count=6)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -278,13 +282,12 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         if not updated:
            return {}
            
-        #Update the global counter   
-        global update_cnt
-        update_cnt = update_cnt+1
-        if (update_cnt >= 65535):
-           update_cnt=0
+        #Update the counter   
+        self.update_cnt = self.update_cnt+1
+        if (self.update_cnt >= 65535):
+           self.update_cnt=0
            
-        data["update_cnt"]=update_cnt
+        data["update_cnt"]=self.update_cnt
         
 
         return data
