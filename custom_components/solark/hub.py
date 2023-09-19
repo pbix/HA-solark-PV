@@ -75,7 +75,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
         #See if a valid, non-default slave number was specified
         if (parsed.params.isdigit()) and (int(parsed.params) > 1) and (int(parsed.params) < 256):
-            slaveno = int(parsed.params)
+            self.slaveno = int(parsed.params)
             
         #Make a connection request since for some reasons pymodbus v3.5.0 no longer automatically does this for us.
         #Looks like it is fixed in v3.5.2 but who wants to wait.
