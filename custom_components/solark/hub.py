@@ -17,11 +17,9 @@ from .const import FAULT_MESSAGES
 
 _LOGGER = logging.getLogger(__name__)
 
-update_cnt=0
-
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
     """Thread safe wrapper class for pymodbus."""
-    
+
     def __init__(
         self,
         hass: HomeAssistantType,
@@ -37,6 +35,9 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             update_interval=timedelta(seconds=scan_interval),
         )
 
+        self.slaveno=1
+        self.update_cnt=0
+        
         #Break the entered hostnames into its component parts.
         parsed=urlparse(f'//{hostname}')
         
@@ -49,14 +50,22 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         else:
            from pymodbus.client import ModbusTcpClient, ModbusSerialClient
 
-
-        #If it not a URL it might be a serial port.
-        #This logic is tested to work with linux and windows serial port names.
+        #If it not a proper URL it might be a serial port.
+        #This logic is tested to work with linux and windows serial port names, port numbers and slaveIDs
+        #Tested URLs:
+        #  192.168.2.2
+        #  192.268.2.2:502
+        #  192.168.2.2:502/;3
+        #  192.168.2.2/;3
+        #  /dev/ttyUSB0
+        #  /dev/ttyUDB0/;3
+        #  COM1
+        #  COM1/;3
+        #
         if (parsed.port is None) and ((parsed.hostname is None) or (parsed.hostname[0:3] == "com" )):
-            self._client = ModbusSerialClient(method='rtu',port=parsed.path+parsed.netloc,baudrate=9600,
+            self._client = ModbusSerialClient(method='rtu',port=parsed.path.rstrip('/')+parsed.netloc,baudrate=9600,
                                               stopbits=1,bytesize=8,timeout=5)
         else:
-
             if (parsed.port is None):
                 localport=502
             else:
@@ -64,6 +73,10 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
             self._client = ModbusTcpClient(host=parsed.hostname, port=localport, timeout=5)
 
+        #See if a valid, non-default slave number was specified
+        if (parsed.params.isdigit()) and (int(parsed.params) > 1) and (int(parsed.params) < 256):
+            self.slaveno = int(parsed.params)
+            
         #Make a connection request since for some reasons pymodbus v3.5.0 no longer automatically does this for us.
         #Looks like it is fixed in v3.5.2 but who wants to wait.
         self._client.connect()
@@ -120,7 +133,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
     def read_modbus_inverter_data(self) -> dict:
 
-        inverter_data = self._read_holding_registers(unit=1, address=3, count=5)
+        inverter_data = self._read_holding_registers(unit=self.slaveno, address=3, count=5)
 
         if inverter_data.isError():
             return {}
@@ -139,7 +152,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         data={}
         updated=False
 
-        realtime_data = self._read_holding_registers(unit=1, address=60, count=21)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=60, count=21)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -159,7 +172,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["gridfreq"] = decoder.decode_16bit_uint()/100.0
             updated=True
 
-        realtime_data = self._read_holding_registers(unit=1, address=84, count=3)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=84, count=3)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -171,7 +184,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated=True
 
 
-        realtime_data = self._read_holding_registers(unit=1, address=96, count=21)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=96, count=21)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -197,7 +210,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated=True
 
 
-        realtime_data = self._read_holding_registers(unit=1, address=150, count=21)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=150, count=21)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -227,7 +240,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["gridlmtl1_p"] = decoder.decode_16bit_int()        #R170
             updated=True
 
-        realtime_data = self._read_holding_registers(unit=1, address=171, count=18)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=171, count=18)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -260,7 +273,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated=True
 
 
-        realtime_data = self._read_holding_registers(unit=1, address=190, count=6)
+        realtime_data = self._read_holding_registers(unit=self.slaveno, address=190, count=6)
         if not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -278,13 +291,12 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         if not updated:
            return {}
            
-        #Update the global counter   
-        global update_cnt
-        update_cnt = update_cnt+1
-        if (update_cnt >= 65535):
-           update_cnt=0
+        #Update the counter   
+        self.update_cnt = self.update_cnt+1
+        if (self.update_cnt >= 65535):
+           self.update_cnt=0
            
-        data["update_cnt"]=update_cnt
+        data["update_cnt"]=self.update_cnt
         
 
         return data
