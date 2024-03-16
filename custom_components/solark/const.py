@@ -564,9 +564,28 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         state_class=SensorStateClass.TOTAL,
         entity_registry_enabled_default=False,
     ),
+    
     "Grid_Rly": SolArkModbusSensorEntityDescription(
         name="Grid Relay",
         key="grid_rly",
+        entity_registry_enabled_default=False,
+    ),
+
+    "ACHSTempC": SolArkModbusSensorEntityDescription(
+        name="AC Heatsink Temperature",
+        key="achstempc",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+    ),
+
+    "DCHSTempC": SolArkModbusSensorEntityDescription(
+        name="DC Heatsink Temperature",
+        key="dchstempc",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
     ),
 }
