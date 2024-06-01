@@ -5,8 +5,7 @@ import threading
 import pymodbus
 from urllib.parse import urlparse
 
-from homeassistant.core import CALLBACK_TYPE, callback
-from homeassistant.helpers.typing import HomeAssistantType
+from homeassistant.core import CALLBACK_TYPE, callback, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from pymodbus.exceptions import ConnectionException
 from pymodbus.payload import BinaryPayloadDecoder
@@ -22,7 +21,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
     def __init__(
         self,
-        hass: HomeAssistantType,
+        hass: HomeAssistant,
         name: str,
         hostname: str,
         scan_interval: Number,
