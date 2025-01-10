@@ -9,7 +9,7 @@ from homeassistant.core import CALLBACK_TYPE, callback, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from pymodbus.exceptions import ConnectionException
 from pymodbus.payload import BinaryPayloadDecoder
-from pymodbus.register_read_message import ReadHoldingRegistersResponse
+from pymodbus.pdu.register_read_message import ReadHoldingRegistersResponse
 from voluptuous.validators import Number
 
 from .const import FAULT_MESSAGES
@@ -62,7 +62,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         #  COM1/;3
         #
         if (parsed.port is None) and ((parsed.hostname is None) or (parsed.hostname[0:3] == "com" )):
-            self._client = ModbusSerialClient(method='rtu',port=parsed.path.rstrip('/')+parsed.netloc,baudrate=9600,
+            self._client = ModbusSerialClient(port=parsed.path.rstrip('/')+parsed.netloc,baudrate=9600,
                                               stopbits=1,bytesize=8,timeout=5)
         else:
             if (parsed.port is None):
