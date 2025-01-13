@@ -9,12 +9,26 @@ from homeassistant.core import CALLBACK_TYPE, callback, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from pymodbus.exceptions import ConnectionException
 from pymodbus.payload import BinaryPayloadDecoder
-from pymodbus.register_read_message import ReadHoldingRegistersResponse
 from voluptuous.validators import Number
 
 from .const import FAULT_MESSAGES
 
 _LOGGER = logging.getLogger(__name__)
+
+#There is another breaking change starting at pymodbus v3.4.7
+#HomeAssistant switched to pymodbus v3.4.7 starting at 2025.1. 
+#
+#Logger output printing pymodbus.__version__
+# 025-01-12 19:30:14.751 INFO (ImportExecutor_0) [custom_components.solark_modbus.hub] __version__ 3.7.4
+#_LOGGER.info("__version__ %s", pymodbus.__version__ )
+
+prior347=False
+if hasattr(pymodbus,'__version__') and ( ((pymodbus.__version__[0] == '3') and (pymodbus.__version__[2] <= '1')) or (pymodbus.__version__[0] <= '2')):
+   from pymodbus.register_read_message import ReadHoldingRegistersResponse
+   prior347 = True
+else:
+   from pymodbus.pdu.register_read_message import ReadHoldingRegistersResponse
+
 
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
     """Thread safe wrapper class for pymodbus."""
@@ -62,8 +76,10 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         #  COM1/;3
         #
         if (parsed.port is None) and ((parsed.hostname is None) or (parsed.hostname[0:3] == "com" )):
-            self._client = ModbusSerialClient(method='rtu',port=parsed.path.rstrip('/')+parsed.netloc,baudrate=9600,
-                                              stopbits=1,bytesize=8,timeout=5)
+            if (prior347):
+               self._client = ModbusSerialClient(method='rtu',port=parsed.path.rstrip('/')+parsed.netloc,baudrate=9600,stopbits=1,bytesize=8,timeout=5)
+            else:
+               self._client = ModbusSerialClient(port=parsed.path.rstrip('/')+parsed.netloc,baudrate=9600,stopbits=1,bytesize=8,timeout=5)
         else:
             if (parsed.port is None):
                 localport=502
