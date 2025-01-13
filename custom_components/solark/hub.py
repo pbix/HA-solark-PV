@@ -15,10 +15,15 @@ from .const import FAULT_MESSAGES
 
 _LOGGER = logging.getLogger(__name__)
 
-#There is another breaking change staring at pymodbus v3.4.7
+#There is another breaking change starting at pymodbus v3.4.7
 #HomeAssistant switched to pymodbus v3.4.7 starting at 2025.1. 
+#
+#Logger output printing pymodbus.__version__
+# 025-01-12 19:30:14.751 INFO (ImportExecutor_0) [custom_components.solark_modbus.hub] __version__ 3.7.4
+#_LOGGER.info("__version__ %s", pymodbus.__version__ )
+
 prior347=False
-if hasattr(pymodbus,'__version__') and ( ((pymodbus.__version__[0] == '3') and (pymodbus.__version__[1] <= '4')) or (pymodbus.__version__[0] <= '2')):
+if hasattr(pymodbus,'__version__') and ( ((pymodbus.__version__[0] == '3') and (pymodbus.__version__[2] <= '1')) or (pymodbus.__version__[0] <= '2')):
    from pymodbus.register_read_message import ReadHoldingRegistersResponse
    prior347 = True
 else:
