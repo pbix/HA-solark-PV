@@ -122,11 +122,11 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         with self._lock:
             
             if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
-                kwargs = {"unit": unit}
+#                kwargs = {"unit": unit}
+                return self._client.read_holding_registers(address, count, unit)
             else:
-                kwargs = {"slave": unit}
-
-            return self._client.read_holding_registers(address, count, **kwargs)
+#                kwargs = {"slave": unit}
+                return self._client.read_holding_registers(address, count, slave=unit)
 
     async def _async_update_data(self) -> dict:
         realtime_data = {}
