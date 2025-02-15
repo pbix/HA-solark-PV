@@ -120,12 +120,11 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         """Read holding registers."""
 
         with self._lock:
-            
+
+            #pymodbus v3.8.3 seems to have changed to force keyword arguments.
             if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
-#                kwargs = {"unit": unit}
                 return self._client.read_holding_registers(address, count, unit)
             else:
-#                kwargs = {"slave": unit}
                 return self._client.read_holding_registers(address, count, slave=unit)
 
     async def _async_update_data(self) -> dict:
