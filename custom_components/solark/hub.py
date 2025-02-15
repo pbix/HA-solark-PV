@@ -270,12 +270,18 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         """Read holding registers."""
 
         with self._lock:
+            try:
 
-            #pymodbus v3.8.3 seems to have changed to force keyword arguments.
-            if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
-                return self._client.read_holding_registers(address, count, unit)
-            else:
-                return self._client.read_holding_registers(address, count, slave=unit)
+                #pymodbus v3.8.3 seems to have changed to force keyword arguments.
+                if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
+                    return self._client.read_holding_registers(address, count, unit)
+                else:
+                    return self._client.read_holding_registers(address, count=count, slave=unit)
+
+            except ConnectionException:
+                 _LOGGER.error("Reading realtime data faild!  Unable to decode frame.")
+                 realtime_data["faultmsg"] = "Inverter communication issue."
+           
 
     async def _async_update_data(self) -> dict:
         realtime_data = {}
