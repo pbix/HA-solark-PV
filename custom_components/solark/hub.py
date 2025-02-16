@@ -3,14 +3,17 @@ from datetime import timedelta
 import logging
 import threading
 import pymodbus
+from array import array
 from urllib.parse import urlparse
 
 from homeassistant.core import CALLBACK_TYPE, callback, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from pymodbus.exceptions import ConnectionException
-from pymodbus.payload import BinaryPayloadDecoder
+from pymodbus.client import ModbusSerialClient, ModbusTcpClient
+from pymodbus.constants import Endian
+from pymodbus.exceptions import ConnectionException, ParameterException
+from pymodbus.logging import Log
+from struct import pack, unpack
 from voluptuous.validators import Number
-
 from .const import FAULT_MESSAGES
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,6 +31,153 @@ if hasattr(pymodbus,'__version__') and ( ((pymodbus.__version__[0] == '3') and (
    prior347 = True
 else:
    from pymodbus.pdu.register_read_message import ReadHoldingRegistersResponse
+
+
+#Since pymodbus BinaryPayloadDecoder is deprecated, create our own to replace it.
+class BinaryPayloadDecoder:
+    """A utility that helps decode payload messages from a modbus response message.
+
+    It really is just a simple wrapper around
+    the struct module, however it saves time looking up the format
+    strings. What follows is a simple example::
+
+        decoder = BinaryPayloadDecoder(payload)
+        first   = decoder.decode_8bit_uint()
+        second  = decoder.decode_16bit_uint()
+    """
+
+    @classmethod
+    def deprecate(cls):
+        """Log warning."""
+
+    def __init__(self, payload, byteorder=Endian.LITTLE, wordorder=Endian.LITTLE):
+        """Initialize a new payload decoder.
+
+        :param payload: The payload to decode with
+        :param byteorder: The endianness of the payload
+        :param wordorder: The endianness of the word (when wordcount is >= 2)
+        """
+        # self.deprecate()
+        self._payload = payload
+        self._pointer = 0x00
+        self._byteorder = byteorder
+        self._wordorder = wordorder
+
+
+    @classmethod
+    def fromRegisters(
+        cls,
+        registers,
+        byteorder=Endian.LITTLE,
+        wordorder=Endian.BIG,
+    ):
+        """Initialize a payload decoder.
+
+        With the result of reading a collection of registers from a modbus device.
+
+        The registers are treated as a list of 2 byte values.
+        We have to do this because of how the data has already
+        been decoded by the rest of the library.
+
+        :param registers: The register results to initialize with
+        :param byteorder: The Byte order of each word
+        :param wordorder: The endianness of the word (when wordcount is >= 2)
+        :returns: An initialized PayloadDecoder
+        :raises ParameterException:
+        """
+        cls.deprecate()
+        Log.debug("{}", registers)
+        if isinstance(registers, list):  # repack into flat binary
+            payload = pack(f"!{len(registers)}H", *registers)
+            return cls(payload, byteorder, wordorder)
+        raise ParameterException("Invalid collection of registers supplied")
+
+
+    def _unpack_words(self, handle) -> bytes:
+        """Unpack words based on the word order and byte order.
+
+        # ---------------------------------------------- #
+        # Unpack in to network ordered unsigned integer  #
+        # Change Word order if little endian word order  #
+        # Pack values back based on correct byte order   #
+        # ---------------------------------------------- #
+        """
+        if Endian.LITTLE in {self._byteorder, self._wordorder}:
+            handle = array("H", handle)
+            if self._byteorder == Endian.LITTLE:
+                handle.byteswap()
+            if self._wordorder == Endian.LITTLE:
+                handle.reverse()
+            handle = handle.tobytes()
+        Log.debug("handle: {}", handle)
+        return handle
+
+    def decode_8bit_uint(self):
+        """Decode a 8 bit unsigned int from the buffer."""
+        # self.deprecate()
+        self._pointer += 1
+        fstring = self._byteorder + "B"
+        handle = self._payload[self._pointer - 1 : self._pointer]
+        return unpack(fstring, handle)[0]
+
+    def decode_16bit_uint(self):
+        """Decode a 16 bit unsigned int from the buffer."""
+        # self.deprecate()
+        self._pointer += 2
+        fstring = self._byteorder + "H"
+        handle = self._payload[self._pointer - 2 : self._pointer]
+        return unpack(fstring, handle)[0]
+
+    def decode_32bit_uint(self):
+        """Decode a 32 bit unsigned int from the buffer."""
+        # self.deprecate()
+        self._pointer += 4
+        fstring = "I"
+        handle = self._payload[self._pointer - 4 : self._pointer]
+        handle = self._unpack_words(handle)
+        return unpack("!" + fstring, handle)[0]
+
+    def decode_8bit_int(self):
+        """Decode a 8 bit signed int from the buffer."""
+        # self.deprecate()
+        self._pointer += 1
+        fstring = self._byteorder + "b"
+        handle = self._payload[self._pointer - 1 : self._pointer]
+        return unpack(fstring, handle)[0]
+
+    def decode_16bit_int(self):
+        """Decode a 16 bit signed int from the buffer."""
+        # self.deprecate()
+        self._pointer += 2
+        fstring = self._byteorder + "h"
+        handle = self._payload[self._pointer - 2 : self._pointer]
+        return unpack(fstring, handle)[0]
+
+    def decode_32bit_int(self):
+        """Decode a 32 bit signed int from the buffer."""
+        # self.deprecate()
+        self._pointer += 4
+        fstring = "i"
+        handle = self._payload[self._pointer - 4 : self._pointer]
+        handle = self._unpack_words(handle)
+        return unpack("!" + fstring, handle)[0]
+
+    def decode_string(self, size=1):
+        """Decode a string from the buffer.
+
+        :param size: The size of the string to decode
+        """
+        # self.deprecate()
+        self._pointer += size
+        return self._payload[self._pointer - size : self._pointer]
+
+    def skip_bytes(self, nbytes):
+        """Skip n bytes in the buffer.
+
+        :param nbytes: The number of bytes to skip
+        """
+        # self.deprecate()
+        self._pointer += nbytes
 
 
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
@@ -120,13 +270,18 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         """Read holding registers."""
 
         with self._lock:
-            
-            if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
-                kwargs = {"unit": unit}
-            else:
-                kwargs = {"slave": unit}
+            try:
 
-            return self._client.read_holding_registers(address, count, **kwargs)
+                #pymodbus v3.8.3 seems to have changed to force keyword arguments.
+                if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
+                    return self._client.read_holding_registers(address, count, unit)
+                else:
+                    return self._client.read_holding_registers(address, count=count, slave=unit)
+
+            except ConnectionException:
+                 _LOGGER.error("Reading realtime data faild!  Unable to decode frame.")
+                 realtime_data["faultmsg"] = "Inverter communication issue."
+           
 
     async def _async_update_data(self) -> dict:
         realtime_data = {}
@@ -265,7 +420,6 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
                 realtime_data.registers, byteorder='>'
             )
 
-
             data["gridlmtl2_p"] = decoder.decode_16bit_int()        #R171
             data["gridext_p"] = decoder.decode_16bit_int()        
             data["invl1_p"] = decoder.decode_16bit_int()        
@@ -315,10 +469,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
            self.update_cnt=0
            
         data["update_cnt"]=self.update_cnt
-        
-
         return data
-
 
 
     def translate_fault_code_to_messages(
@@ -338,4 +489,3 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             messages = "Fault Code: "+hex(fault_code)
 
         return messages
-
