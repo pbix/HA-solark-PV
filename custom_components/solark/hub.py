@@ -29,9 +29,10 @@ prior347=False
 if hasattr(pymodbus,'__version__') and ( ((pymodbus.__version__[0] == '3') and (pymodbus.__version__[2] <= '1')) or (pymodbus.__version__[0] <= '2')):
    from pymodbus.register_read_message import ReadHoldingRegistersResponse
    prior347 = True
-else:
+elif hasattr(pymodbus,'__version__') and ((pymodbus.__version__[0] == '3') and (pymodbus.__version__[2] < '8')):
    from pymodbus.pdu.register_read_message import ReadHoldingRegistersResponse
-
+else:
+   from pymodbus.pdu.register_message import ReadHoldingRegistersResponse
 
 #Since pymodbus BinaryPayloadDecoder is deprecated, create our own to replace it.
 class BinaryPayloadDecoder:
