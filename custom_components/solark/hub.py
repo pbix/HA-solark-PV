@@ -240,7 +240,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             self._client = ModbusTcpClient(host=parsed.hostname, port=localport, timeout=5)
 
         #See if a valid, non-default slave number was specified
-        if (parsed.params.isdigit()) and (int(parsed.params) > 1) and (int(parsed.params) < 256):
+        if (parsed.params.isdigit()) and (int(parsed.params) < 256):
             self.slaveno = int(parsed.params)
             
         #Make a connection request since for some reasons pymodbus v3.5.0 no longer automatically does this for us.
