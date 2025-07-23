@@ -500,6 +500,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         key="batt_soc",
         icon="mdi:battery-50",
         native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
     ),
