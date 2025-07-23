@@ -1,5 +1,5 @@
 """SolArk Modbus Hub"""
-from datetime import timedelta
+from datetime import timedelta, datetime
 import logging
 import threading
 import pymodbus
@@ -184,6 +184,9 @@ class BinaryPayloadDecoder:
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
     """Thread safe wrapper class for pymodbus."""
 
+    # Maximum age of last successful reading before considering it stale (in seconds)
+    MAX_DATA_AGE = 300  # 5 minutes
+
     def __init__(
         self,
         hass: HomeAssistant,
@@ -201,7 +204,9 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
         self.slaveno=1
         self.update_cnt=0
-        
+        self.last_successful_data = {}
+        self.last_successful_timestamp = None
+
         #Break the entered hostnames into its component parts.
         parsed=urlparse(f'//{hostname}')
         
@@ -280,9 +285,9 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
                     return self._client.read_holding_registers(address, count=count, slave=unit)
 
             except ConnectionException:
-                 _LOGGER.error("Reading realtime data faild!  Unable to decode frame.")
-                 realtime_data["faultmsg"] = "Inverter communication issue."
-           
+                 _LOGGER.warning("Reading realtime data failed! Unable to decode frame.")
+                 return None
+
 
     async def _async_update_data(self) -> dict:
         realtime_data = {}
@@ -296,9 +301,30 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             realtime_data = await self.hass.async_add_executor_job(
                 self.read_modbus_realtime_data
             )
+            if realtime_data is None:
+                # Check if we have last known values and they're not too old
+                if (self.last_successful_data and self.last_successful_timestamp and
+                    (datetime.now() - self.last_successful_timestamp).total_seconds() < self.MAX_DATA_AGE):
+                    realtime_data = self.last_successful_data
+                    _LOGGER.warning("Using last known values (%.1f seconds old) due to communication error",
+                                  (datetime.now() - self.last_successful_timestamp).total_seconds())
+                else:
+                    _LOGGER.error("No recent valid data available (last successful read: %s)",
+                                self.last_successful_timestamp.strftime('%Y-%m-%d %H:%M:%S') if self.last_successful_timestamp else "never")
+                    realtime_data = {"faultmsg": "Communication lost with inverter"}
+
         except ConnectionException:
-            _LOGGER.error("Reading realtime data failed! Inverter is unreachable.")
-            realtime_data["faultmsg"] = "Inverter is unreachable."
+            _LOGGER.warning("Reading realtime data failed! Inverter is unreachable.")
+            # Check if we have last known values and they're not too old
+            if (self.last_successful_data and self.last_successful_timestamp and
+                (datetime.now() - self.last_successful_timestamp).total_seconds() < self.MAX_DATA_AGE):
+                realtime_data = self.last_successful_data
+                _LOGGER.info("Using last known values (%.1f seconds old)",
+                           (datetime.now() - self.last_successful_timestamp).total_seconds())
+            else:
+                _LOGGER.error("No recent valid data available (last successful read: %s)",
+                            self.last_successful_timestamp.strftime('%Y-%m-%d %H:%M:%S') if self.last_successful_timestamp else "never")
+                realtime_data = {"faultmsg": "Communication lost with inverter"}
 
         return {**self.inverter_data, **realtime_data}
 
@@ -306,7 +332,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
         inverter_data = self._read_holding_registers(unit=self.slaveno, address=3, count=5)
 
-        if inverter_data.isError():
+        if inverter_data is None or inverter_data.isError():
             return {}
 
         data = {}
@@ -324,7 +350,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         updated=False
 
         realtime_data = self._read_holding_registers(unit=self.slaveno, address=60, count=21)
-        if not realtime_data.isError():
+        if realtime_data is not None and not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
                 realtime_data.registers, byteorder='>', wordorder='<'
@@ -344,7 +370,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated=True
 
         realtime_data = self._read_holding_registers(unit=self.slaveno, address=84, count=8)
-        if not realtime_data.isError():
+        if realtime_data is not None and not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
                 realtime_data.registers, byteorder='>', wordorder='<'
@@ -359,7 +385,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
 
         realtime_data = self._read_holding_registers(unit=self.slaveno, address=96, count=21)
-        if not realtime_data.isError():
+        if realtime_data is not None and not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
                 realtime_data.registers, byteorder='>', wordorder='<'
@@ -385,7 +411,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
 
         realtime_data = self._read_holding_registers(unit=self.slaveno, address=150, count=21)
-        if not realtime_data.isError():
+        if realtime_data is not None and not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
                 realtime_data.registers, byteorder='>'
@@ -415,7 +441,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated=True
 
         realtime_data = self._read_holding_registers(unit=self.slaveno, address=171, count=18)
-        if not realtime_data.isError():
+        if realtime_data is not None and not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
                 realtime_data.registers, byteorder='>'
@@ -447,7 +473,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
 
         realtime_data = self._read_holding_registers(unit=self.slaveno, address=190, count=6)
-        if not realtime_data.isError():
+        if realtime_data is not None and not realtime_data.isError():
 
             decoder = BinaryPayloadDecoder.fromRegisters(
                 realtime_data.registers, byteorder='>'
@@ -470,6 +496,10 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
            self.update_cnt=0
            
         data["update_cnt"]=self.update_cnt
+
+        # Store this successful reading
+        self.last_successful_data = data.copy()
+        self.last_successful_timestamp = datetime.now()
         return data
 
 
