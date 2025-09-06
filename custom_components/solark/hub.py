@@ -22,13 +22,16 @@ _LOGGER = logging.getLogger(__name__)
 #
 #Logger output printing pymodbus.__version__
 # 025-01-12 19:30:14.751 INFO (ImportExecutor_0) [custom_components.solark_modbus.hub] __version__ 3.7.4
-#_LOGGER.info("__version__ %s", pymodbus.__version__ )
 
 prior347=False
-if hasattr(pymodbus,'__version__') and ( ((pymodbus.__version__[0] == '3') and (pymodbus.__version__[2] <= '1')) or (pymodbus.__version__[0] <= '2')):
+pyversion = list(map(int, pymodbus.__version__.split('.')))
+
+#_LOGGER.info("__version__ %i %i  %i",pyversion[0], pyversion[1], pyversion[2])
+
+if hasattr(pymodbus,'__version__') and ( ((pyversion[0] == 3) and (pyversion[1] <= 1)) or (pyversion[0] <= 2)):
    from pymodbus.register_read_message import ReadHoldingRegistersResponse
    prior347 = True
-elif hasattr(pymodbus,'__version__') and ((pymodbus.__version__[0] == '3') and (pymodbus.__version__[2] < '8')):
+elif hasattr(pymodbus,'__version__') and ((pyversion[0] == 3) and (pyversion[1] < 8)):
    from pymodbus.pdu.register_read_message import ReadHoldingRegistersResponse
 else:
    from pymodbus.pdu.register_message import ReadHoldingRegistersResponse
@@ -208,11 +211,11 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         #HomeAssistant switched to pymodbus v3.1.1 starting at 2023.2.  The
         #below code makes sure that this integration will work with either version
         #of pymodbus.
-        if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
+        if hasattr(pymodbus,'__version__') and (pyversion[0] == 2):
            from pymodbus.client.sync import ModbusTcpClient, ModbusSerialClient
         else:
            from pymodbus.client import ModbusTcpClient, ModbusSerialClient
-
+       
         #If it not a proper URL it might be a serial port.
         #This logic is tested to work with linux and windows serial port names, port numbers and slaveIDs
         #Tested URLs:
@@ -273,10 +276,13 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             try:
 
                 #pymodbus v3.8.3 seems to have changed to force keyword arguments.
-                if hasattr(pymodbus,'__version__') and (pymodbus.__version__[0] == '2'):
-                    return self._client.read_holding_registers(address, count, unit)
+                if hasattr(pymodbus,'__version__') and (pyversion[0] == 2):
+                   return self._client.read_holding_registers(address, count, unit)
+                #pymodbus v3.10 changed keyword slave to device_id.
+                elif hasattr(pymodbus,'__version__') and (pyversion[0] == 3) and (pyversion[1] < 10):
+                   return self._client.read_holding_registers(address, count=count, slave=unit)
                 else:
-                    return self._client.read_holding_registers(address, count=count, slave=unit)
+                   return self._client.read_holding_registers(address, count=count, device_id=unit)
 
             except ConnectionException:
                  _LOGGER.error("Reading realtime data faild!  Unable to decode frame.")
