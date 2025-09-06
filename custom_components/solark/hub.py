@@ -9,7 +9,6 @@ from urllib.parse import urlparse
 from homeassistant.core import CALLBACK_TYPE, callback, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from pymodbus.client import ModbusSerialClient, ModbusTcpClient
-from pymodbus.constants import Endian
 from pymodbus.exceptions import ConnectionException, ParameterException
 from pymodbus.logging import Log
 from struct import pack, unpack
@@ -51,7 +50,7 @@ class BinaryPayloadDecoder:
     def deprecate(cls):
         """Log warning."""
 
-    def __init__(self, payload, byteorder=Endian.LITTLE, wordorder=Endian.LITTLE):
+    def __init__(self, payload, byteorder='<', wordorder='<'):
         """Initialize a new payload decoder.
 
         :param payload: The payload to decode with
@@ -69,8 +68,8 @@ class BinaryPayloadDecoder:
     def fromRegisters(
         cls,
         registers,
-        byteorder=Endian.LITTLE,
-        wordorder=Endian.BIG,
+        byteorder='<',
+        wordorder='>',
     ):
         """Initialize a payload decoder.
 
@@ -103,11 +102,11 @@ class BinaryPayloadDecoder:
         # Pack values back based on correct byte order   #
         # ---------------------------------------------- #
         """
-        if Endian.LITTLE in {self._byteorder, self._wordorder}:
+        if '<' in {self._byteorder, self._wordorder}:
             handle = array("H", handle)
-            if self._byteorder == Endian.LITTLE:
+            if self._byteorder == '<':
                 handle.byteswap()
-            if self._wordorder == Endian.LITTLE:
+            if self._wordorder == '<':
                 handle.reverse()
             handle = handle.tobytes()
         Log.debug("handle: {}", handle)
