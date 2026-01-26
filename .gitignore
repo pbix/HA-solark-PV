@@ -92,6 +92,18 @@ ENV/
 env.bak/
 venv.bak/
 
+# Runtime folders
+.storage
+blueprints
+custom_components/hacs
+.ha_run.lock
+.HA_VERSION
+automations.yaml
+configuration.yaml
+home-assistant*
+scenes.yaml
+scripts.yaml
+secrets.yaml
 
 # Spyder project settings
 .spyderproject
