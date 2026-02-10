@@ -1,7 +1,7 @@
 """SolArk Modbus Hub."""
 
 from array import array
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
 from struct import pack, unpack
 import threading
@@ -20,7 +20,7 @@ from voluptuous.validators import Number
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import FAULT_MESSAGES
+from .const import FAULT_MESSAGES, MODBUS_EXCEPTIONS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -195,13 +195,12 @@ class BinaryPayloadDecoder:
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
     """Thread safe wrapper class for pymodbus."""
 
+    # Maximum age of last successful reading before considering it stale (in seconds)
+    MAX_DATA_AGE = 300  # 5 minutes
+
     def __init__(
-        self,
-        hass: HomeAssistant,
-        name: str,
-        hostname: str,
-        scan_interval: Number,
-    ):
+        self, hass: HomeAssistant, name: str, hostname: str, scan_interval: Number
+    ) -> None:
         """Initialize the Modbus hub."""
         super().__init__(
             hass,
@@ -212,6 +211,8 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
         self.slaveno = 1
         self.update_cnt = 0
+        self.last_successful_data = {}
+        self.last_successful_timestamp = None
 
         # Break the entered hostnames into its component parts.
         parsed = urlparse(f"//{hostname}")
@@ -284,7 +285,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         """Remove data update listener."""
         super().async_remove_listener(update_callback)
 
-        """No listeners left then close connection"""
+        # No listeners left then close connection
         if not self._listeners:
             self.close()
 
@@ -297,12 +298,15 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         self, unit, address, count
     ) -> ReadHoldingRegistersResponse:
         """Read holding registers."""
-        # realtime_data = {}
+
+        """Catch and handle common exceptions by returning error.
+        Should not return NONE, and bubbles up ONLY unexpected exceptions."""
         with self._lock:
+            result: ReadHoldingRegistersResponse
             try:
                 # pymodbus v3.8.3 seems to have changed to force keyword arguments.
                 if hasattr(pymodbus, "__version__") and (pyversion[0] == 2):
-                    return self._client.read_holding_registers(address, count, unit)
+                    result = self._client.read_holding_registers(address, count, unit)
 
                 # pymodbus v3.10 changed keyword slave to device_id.
                 if (
@@ -310,46 +314,94 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
                     and (pyversion[0] == 3)
                     and (pyversion[1] < 10)
                 ):
-                    return self._client.read_holding_registers(
+                    result = self._client.read_holding_registers(
                         address, count=count, slave=unit
                     )
 
-                return self._client.read_holding_registers(
+                result = self._client.read_holding_registers(
                     address, count=count, device_id=unit
                 )
 
-            except ModbusIOException as e:
-                _LOGGER.error("Reading holding registers I/O error: %s", e.string)
-            except ConnectionException as e:
-                _LOGGER.error(
-                    "Reading holding registers connection error: %s", e.string
-                )
-            except ModbusException as e:
-                _LOGGER.error("Reading holding registers failed! %s", e.string)
+                if result.isError():
+                    code = getattr(result, "exception_code", None)
+                    if code:
+                        err = MODBUS_EXCEPTIONS.get(
+                            code, f"Unknown Modbus exception: {code}"
+                        )
+                    else:
+                        err = str(result)
 
-            ret = ReadHoldingRegistersResponse(0)
-            ret.isError = lambda: True
-            return ret
+                    _LOGGER.warning("Reading holding registers Modbus error: %s", err)
+                else:
+                    # Success
+                    return result
+
+            except ModbusIOException as e:
+                return self._get_exception_result(e)
+            except ConnectionException as e:
+                return self._get_exception_result(e)
+            except ModbusException as e:
+                return self._get_exception_result(e)
+
+    def _get_exception_result(self, exception) -> ReadHoldingRegistersResponse:
+        if isinstance(exception, ModbusIOException):
+            err = f"Reading holding registers I/O error: {exception}"
+        elif isinstance(exception, ConnectionException):
+            err = f"Reading holding registers connection error: {exception}"
+        elif isinstance(exception, ModbusException):
+            err = f"Reading holding registers Modbus exception: {exception}"
+        else:
+            err = f"Unexpected error reading holding registers: {exception}"
+
+        _LOGGER.warning("Reading holding registers error: %s", err)
+
+        result = ReadHoldingRegistersResponse(0)
+        result.isError = lambda: True
+        result.error_message = ModbusException(err)
+        return result
 
     async def _async_update_data(self) -> dict:
+        """Read the data from the inverter and return it as a dictionary."""
         realtime_data = {}
         try:
-            """Inverter serial number is only fetched once"""
-            if not self.inverter_data:
+            if not self.inverter_data:  # Inverter serial number is only fetched once
                 self.inverter_data = await self.hass.async_add_executor_job(
                     self.read_modbus_inverter_data
                 )
-            """Read realtime data"""
+            # Read realtime data
             realtime_data = await self.hass.async_add_executor_job(
                 self.read_modbus_realtime_data
             )
-        except ConnectionException:
-            _LOGGER.error("Reading realtime data failed! Inverter is unreachable.")
-            realtime_data["faultmsg"] = "Inverter is unreachable."
-
-        return {**self.inverter_data, **realtime_data}
+            if not realtime_data:
+                # Check if we have last known values and they're not too old
+                if (
+                    self.last_successful_data
+                    and self.last_successful_timestamp
+                    and (
+                        datetime.now() - self.last_successful_timestamp
+                    ).total_seconds()
+                    < self.MAX_DATA_AGE
+                ):
+                    realtime_data = self.last_successful_data
+                    _LOGGER.warning(
+                        "Using last known values (%.1f seconds old) due to communication error",
+                        (
+                            datetime.now() - self.last_successful_timestamp
+                        ).total_seconds(),
+                    )
+                else:
+                    _LOGGER.error(
+                        "No recent valid data available (last successful read: %s)",
+                        self.last_successful_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                        if self.last_successful_timestamp
+                        else "never",
+                    )
+                    realtime_data = {"faultmsg": "Communication lost with inverter"}
+        finally:
+            return {**self.inverter_data, **realtime_data}
 
     def read_modbus_inverter_data(self) -> dict:
+        """Read the inverter data and return it as a dictionary."""
         inverter_data = self._read_holding_registers(
             unit=self.slaveno, address=3, count=5
         )
@@ -368,6 +420,9 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         return data
 
     def read_modbus_realtime_data(self) -> dict:
+        """Read the real-time data from the inverter and return it as a dictionary."""
+
+        # Empty dictionary is returned if errors prevented the reading of any data
         data = {}
         updated = False
 
@@ -526,6 +581,10 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             self.update_cnt = 0
 
         data["update_cnt"] = self.update_cnt
+
+        # Store this successful reading
+        self.last_successful_data = data.copy()
+        self.last_successful_timestamp = datetime.now()
         return data
 
     def translate_fault_code_to_messages(

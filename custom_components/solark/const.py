@@ -535,6 +535,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
     ),
 }
 
+""" TODO - Add others """
 FAULT_MESSAGES = {
     0b000000000000000000000000010000000: "F08 GFCI Relay Failure",
     0b000000000000000000001000000000000: "F13 Grid Mode Changed",
@@ -549,4 +550,19 @@ FAULT_MESSAGES = {
     0b000000010000000000000000000000000: "F26 Bus Unbalance",
     0b000010000000000000000000000000000: "F29 Paralleled System",
     0b100000000000000000000000000000000: "F33 AC Over Current",
+}
+
+MODBUS_EXCEPTIONS = {
+    0x01: "Illegal Function - Function code not supported",
+    0x02: "Illegal Data Address - Address not allowed",
+    0x03: "Illegal Data Value - Value out of range",
+    0x04: "Slave Device Failure - Device error",
+    0x05: "Acknowledge - Request accepted, processing",
+    0x06: "Slave Device Busy - Try again later",
+    0x07: "Negative acknowledgment",
+    0x08: "Memory Parity Error - Device memory error",
+    0x0A: "Gateway Path Unavailable - Gateway error",
+    0x0B: "Gateway Target Failed - Target not responding",
+    0x0C: "Timeout",
+    0x0D: "Invalid data type",
 }
