@@ -10,5 +10,6 @@
   "name": "SolArk Inverter Modbus",
   "requirements": [
     "pymodbus>=2.3.0"
-  ]
+  ],
+  "python_version": ">=3.10"
 }
