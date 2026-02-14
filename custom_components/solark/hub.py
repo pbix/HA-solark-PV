@@ -5,8 +5,6 @@ import logging
 import threading
 from urllib.parse import urlparse
 
-import pymodbus
-from pymodbus.exceptions import ConnectionException, ModbusException, ModbusIOException
 from voluptuous.validators import Number
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
@@ -15,30 +13,12 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .binary_payload_decoder import BinaryPayloadDecoder
 from .const import MODBUS_EXCEPTIONS
 from .fault_info import translate_fault_code_to_messages
+from .pymodbus_wrapper import (
+    ModbusClientWrapper,
+    ModbusResponse,
+)  # import the new wrapper
 
 _LOGGER = logging.getLogger(__name__)
-
-# There is another breaking change starting at pymodbus v3.4.7
-# HomeAssistant switched to pymodbus v3.4.7 starting at 2025.1.
-#
-# Logger output printing pymodbus.__version__
-# 025-01-12 19:30:14.751 INFO (ImportExecutor_0) [custom_components.solark_modbus.hub] __version__ 3.7.4
-
-prior347 = False
-pyversion = list(map(int, pymodbus.__version__.split(".")))
-
-# _LOGGER.info("__version__ %i %i  %i",pyversion[0], pyversion[1], pyversion[2])
-
-if hasattr(pymodbus, "__version__") and (
-    ((pyversion[0] == 3) and (pyversion[1] <= 1)) or (pyversion[0] <= 2)
-):
-    from pymodbus.register_read_message import ReadHoldingRegistersResponse
-
-    prior347 = True
-elif hasattr(pymodbus, "__version__") and ((pyversion[0] == 3) and (pyversion[1] < 8)):
-    from pymodbus.pdu.register_read_message import ReadHoldingRegistersResponse
-else:
-    from pymodbus.pdu.register_message import ReadHoldingRegistersResponse
 
 
 class SolArkModbusHub(DataUpdateCoordinator[dict]):
@@ -58,7 +38,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             update_interval=timedelta(seconds=scan_interval),
         )
 
-        self.slaveno = 1
+        self.device_id = 1
         self.update_cnt = 0
         self.last_successful_data = {}
         self.last_successful_timestamp = None
@@ -66,17 +46,10 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         # Break the entered hostnames into its component parts.
         parsed = urlparse(f"//{hostname}")
 
-        # There is a breaking change in pymodbus starting with version 3.0.0
-        # HomeAssistant switched to pymodbus v3.1.1 starting at 2023.2.  The
-        # below code makes sure that this integration will work with either version
-        # of pymodbus.
-        if hasattr(pymodbus, "__version__") and (pyversion[0] == 2):
-            from pymodbus.client.sync import ModbusTcpClient, ModbusSerialClient
-        else:
-            from pymodbus.client import ModbusTcpClient, ModbusSerialClient
-
         # If it not a proper URL it might be a serial port.
-        # This logic is tested to work with linux and windows serial port names, port numbers and slaveIDs
+        # This logic is tested to work with linux and windows serial port names,
+        # port numbers and device_ids
+        #
         # Tested URLs:
         #  192.168.2.2
         #  192.268.2.2:502
@@ -88,42 +61,18 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         #  COM1/;3
         #
         if (parsed.port is None) and (
-            (parsed.hostname is None) or (parsed.hostname[0:3] == "com")
+            (parsed.hostname is None) or (parsed.hostname[0:3].lower() == "com")
         ):
-            if prior347:
-                self._client = ModbusSerialClient(
-                    method="rtu",
-                    port=parsed.path.rstrip("/") + parsed.netloc,
-                    baudrate=9600,
-                    stopbits=1,
-                    bytesize=8,
-                    timeout=5,
-                )
-            else:
-                self._client = ModbusSerialClient(
-                    port=parsed.path.rstrip("/") + parsed.netloc,
-                    baudrate=9600,
-                    stopbits=1,
-                    bytesize=8,
-                    timeout=5,
-                )
+            # Serial port
+            port_path = parsed.path.rstrip("/") + parsed.netloc
+            self._client = ModbusClientWrapper(serial_port=port_path, baudrate=9600)
         else:
-            if parsed.port is None:
-                localport = 502
-            else:
-                localport = parsed.port
-
-            self._client = ModbusTcpClient(
-                host=parsed.hostname, port=localport, timeout=5
-            )
+            localport = parsed.port or 502
+            self._client = ModbusClientWrapper(host=parsed.hostname, port=localport)
 
         # See if a valid, non-default slave number was specified
         if (parsed.params.isdigit()) and (int(parsed.params) < 256):
-            self.slaveno = int(parsed.params)
-
-        # Make a connection request since for some reasons pymodbus v3.5.0 no longer automatically does this for us.
-        # Looks like it is fixed in v3.5.2 but who wants to wait.
-        self._client.connect()
+            self.device_id = int(parsed.params)
 
         self._lock = threading.Lock()
         self.inverter_data: dict = {}
@@ -144,71 +93,25 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         with self._lock:
             self._client.close()
 
-    def _read_holding_registers(
-        self, unit, address, count
-    ) -> ReadHoldingRegistersResponse:
+    def _read_holding_registers(self, device_id, address, count) -> ModbusResponse:
         """Read holding registers.
 
         Catch and handle common exceptions by returning error.
         Should not return NONE, and bubbles up ONLY unexpected exceptions.
         """
-        with self._lock:
-            result: ReadHoldingRegistersResponse
-            try:
-                # pymodbus v3.8.3 seems to have changed to force keyword arguments.
-                if hasattr(pymodbus, "__version__") and (pyversion[0] == 2):
-                    result = self._client.read_holding_registers(address, count, unit)
+        result = self._client.read_holding_registers(
+            address, count=count, device_id=device_id
+        )
 
-                # pymodbus v3.10 changed keyword slave to device_id.
-                if (
-                    hasattr(pymodbus, "__version__")
-                    and (pyversion[0] == 3)
-                    and (pyversion[1] < 10)
-                ):
-                    result = self._client.read_holding_registers(
-                        address, count=count, slave=unit
-                    )
+        if result.isError():
+            code = getattr(result, "exception_code", None)
+            if code:
+                err = MODBUS_EXCEPTIONS.get(code, f"Unknown Modbus exception: {code}")
+            else:
+                err = str(result)
 
-                result = self._client.read_holding_registers(
-                    address, count=count, device_id=unit
-                )
+            _LOGGER.warning("Reading holding registers Modbus error: %s", err)
 
-                if result.isError():
-                    code = getattr(result, "exception_code", None)
-                    if code:
-                        err = MODBUS_EXCEPTIONS.get(
-                            code, f"Unknown Modbus exception: {code}"
-                        )
-                    else:
-                        err = str(result)
-
-                    _LOGGER.warning("Reading holding registers Modbus error: %s", err)
-                else:
-                    # Success
-                    return result
-
-            except ModbusIOException as e:
-                return self._get_exception_result(e)
-            except ConnectionException as e:
-                return self._get_exception_result(e)
-            except ModbusException as e:
-                return self._get_exception_result(e)
-
-    def _get_exception_result(self, exception) -> ReadHoldingRegistersResponse:
-        if isinstance(exception, ModbusIOException):
-            err = f"Reading holding registers I/O error: {exception}"
-        elif isinstance(exception, ConnectionException):
-            err = f"Reading holding registers connection error: {exception}"
-        elif isinstance(exception, ModbusException):
-            err = f"Reading holding registers Modbus exception: {exception}"
-        else:
-            err = f"Unexpected error reading holding registers: {exception}"
-
-        _LOGGER.warning("Reading holding registers error: %s", err)
-
-        result = ReadHoldingRegistersResponse(0)
-        result.isError = lambda: True
-        result.error_message = ModbusException(err)
         return result
 
     async def _async_update_data(self) -> dict:
@@ -259,7 +162,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
     def read_modbus_inverter_data(self) -> dict:
         """Read the inverter data and return it as a dictionary."""
         inverter_data = self._read_holding_registers(
-            unit=self.slaveno, address=3, count=5
+            device_id=self.device_id, address=3, count=5
         )
 
         if inverter_data.isError():
@@ -283,7 +186,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         updated = False
 
         realtime_data = self._read_holding_registers(
-            unit=self.slaveno, address=60, count=21
+            device_id=self.device_id, address=60, count=21
         )
         if not realtime_data.isError():
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -304,7 +207,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated = True
 
         realtime_data = self._read_holding_registers(
-            unit=self.slaveno, address=84, count=8
+            device_id=self.device_id, address=84, count=8
         )
         if not realtime_data.isError():
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -323,7 +226,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated = True
 
         realtime_data = self._read_holding_registers(
-            unit=self.slaveno, address=96, count=21
+            device_id=self.device_id, address=96, count=21
         )
         if not realtime_data.isError():
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -351,7 +254,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated = True
 
         realtime_data = self._read_holding_registers(
-            unit=self.slaveno, address=150, count=21
+            device_id=self.device_id, address=150, count=21
         )
         if not realtime_data.isError():
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -382,7 +285,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated = True
 
         realtime_data = self._read_holding_registers(
-            unit=self.slaveno, address=171, count=18
+            device_id=self.device_id, address=171, count=18
         )
         if not realtime_data.isError():
             decoder = BinaryPayloadDecoder.fromRegisters(
@@ -414,7 +317,7 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             updated = True
 
         realtime_data = self._read_holding_registers(
-            unit=self.slaveno, address=190, count=6
+            device_id=self.device_id, address=190, count=6
         )
         if not realtime_data.isError():
             decoder = BinaryPayloadDecoder.fromRegisters(

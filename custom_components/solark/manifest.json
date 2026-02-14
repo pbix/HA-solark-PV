@@ -8,8 +8,8 @@
   "domain": "solark_modbus",
   "iot_class": "local_polling",
   "name": "SolArk Inverter Modbus",
+  "homeassistant": "2023.2.0",
   "requirements": [
-    "pymodbus>=2.3.0"
-  ],
-  "python_version": ">=3.10"
+    "pymodbus>=3.1.1"
+  ]
 }
