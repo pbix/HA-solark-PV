@@ -1,38 +1,35 @@
 from __future__ import annotations
 
-from datetime import datetime
-import logging
 from typing import Optional
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import CONF_NAME
-from homeassistant.core import callback
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_NAME, EntityCategory
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-import homeassistant.util.dt as dt_util
 
 from .const import (
     ATTR_MANUFACTURER,
     DOMAIN,
-    SENSOR_TYPES,
-    SolArkModbusSensorEntityDescription,
 )
 from .hub import SolArkModbusHub
-
-_LOGGER = logging.getLogger(__name__)
+from .register_map import SolArkModbusSensorEntityDescription
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
     hub_name = entry.data[CONF_NAME]
-    hub = hass.data[DOMAIN][hub_name]["hub"]
+    hub: SolArkModbusHub = hass.data[DOMAIN][hub_name]["hub"]
 
-    device_info = {
-        "identifiers": {(DOMAIN, hub_name)},
-        "name": hub_name,
-        "manufacturer": ATTR_MANUFACTURER,
-    }
+    device_info = DeviceInfo(
+        identifiers={(DOMAIN, hub_name)},
+        name=hub_name,
+        manufacturer=ATTR_MANUFACTURER,
+    )
 
     entities = []
-    for sensor_description in SENSOR_TYPES.values():
+
+    # Normal Modbus sensors
+    for sensor_description in hub.register_map.sensor_types().values():
         sensor = SolArkSensor(
             hub_name,
             hub,
@@ -40,6 +37,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
             sensor_description,
         )
         entities.append(sensor)
+
+    # Add ONE configuration info sensor
+    entities.append(
+        SolArkConfigInfoSensor(
+            hub_name,
+            entry,
+            device_info,
+        )
+    )
 
     async_add_entities(entities)
     return True
@@ -55,7 +61,6 @@ class SolArkSensor(CoordinatorEntity, SensorEntity):
         device_info,
         description: SolArkModbusSensorEntityDescription,
     ):
-        """Initialize the sensor."""
         self._platform_name = platform_name
         self._attr_device_info = device_info
         self.entity_description: SolArkModbusSensorEntityDescription = description
@@ -64,7 +69,6 @@ class SolArkSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def name(self):
-        """Return the name."""
         return f"{self._platform_name} {self.entity_description.name}"
 
     @property
@@ -73,9 +77,32 @@ class SolArkSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        """Return the state of the sensor."""
-        return (
-            self.coordinator.data[self.entity_description.key]
-            if self.entity_description.key in self.coordinator.data
-            else None
-        )
+        data = self.coordinator.data
+        if not data:
+            return None
+        return data.get(self.entity_description.key)
+
+
+class SolArkConfigInfoSensor(SensorEntity):
+    """Single diagnostic sensor exposing config values as attributes."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, hub_name: str, entry: ConfigEntry, device_info: DeviceInfo):
+        self._hub_name = hub_name
+        self._entry = entry
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{entry.entry_id}_config_info"
+        self._attr_name = f"{hub_name} Configuration"
+
+    @property
+    def native_value(self):
+        return "loaded"
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            "name": self._entry.data.get("name"),
+            "host": self._entry.data.get("host"),
+            "scan_interval": self._entry.data.get("scan_interval"),
+        }

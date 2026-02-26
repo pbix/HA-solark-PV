@@ -6,7 +6,7 @@ Provides:
 - Thread-safe read/write operations
 - Normalized response object with `.registers` and `.isError()`
 
-Homeassistant Version   Pymodbus Version   Python Version
+Home Assistant Version  Pymodbus Version   Python Version
 2023.2                  3.1.1              3.10
 2024.3                  3.6.5 - 3.6.6      3.12
 2024.4                  3.6.6 - 3.6.7      3.12
@@ -23,8 +23,8 @@ from __future__ import annotations
 import asyncio
 import threading
 
-from packaging import version
 import pymodbus
+from packaging import version
 from pymodbus.exceptions import ConnectionException, ModbusException, ModbusIOException
 
 # ---- Version parsing ----
@@ -63,10 +63,10 @@ class ModbusResponse:
         if self._response is None:
             return True
 
-        method = getattr(self._response, "isError", None)
-        if callable(method):
-            return method()
+        if hasattr(self._response, "isError"):
+            return self._response.isError()  # type: ignore[call-arg] optional if needed
 
+        # If no 'isError' method, consider it an error if it has no 'registers'
         return not hasattr(self._response, "registers")
 
     def get_exception(self) -> Exception | None:
@@ -75,10 +75,7 @@ class ModbusResponse:
 
     def __repr__(self) -> str:
         """Return a string representation of the ModbusResponse."""
-        return (
-            f"<ModbusResponse error={self.isError()} "
-            f"registers={self.registers} exception={self.get_exception()}>"
-        )
+        return f"<ModbusResponse error={self.isError()} registers={self.registers} exception={self.get_exception()}>"
 
 
 class ModbusResponseError(ModbusResponse):
@@ -117,13 +114,14 @@ class ModbusClientWrapper:
 
         if serial_port is not None:
             if IS_PRIOR_TO_V3_5_0:
-                self._client = OldModbusSerialClient(
-                    method="rtu", port=serial_port, baudrate=baudrate, timeout=5
+                self._client = OldModbusSerialClient(  # pylint: disable=E1123
+                    method="rtu",  # type: ignore[call-arg]
+                    port=serial_port,
+                    baudrate=baudrate,
+                    timeout=5,
                 )
             else:
-                self._client = ModbusSerialClient(
-                    port=serial_port, baudrate=baudrate, timeout=5
-                )
+                self._client = ModbusSerialClient(port=serial_port, baudrate=baudrate, timeout=5)
         elif host is not None:
             self._client = ModbusTcpClient(host=host, port=port, timeout=5)
         else:
@@ -133,32 +131,26 @@ class ModbusClientWrapper:
             raise ConnectionException("Modbus connection failed")
 
     # ---- Sync read ----
-    def read_holding_registers(
-        self, address: int, count: int, device_id: int
-    ) -> ModbusResponse:
+    def read_holding_registers(self, address: int, count: int, device_id: int) -> ModbusResponse:
         """Read holding registers in a thread-safe way."""
         with self._lock:
             try:
-                resp = self._client.read_holding_registers(
-                    address, count=count, **self._get_device_id_param_name(device_id)
-                )
+                device_kw = self._get_device_id_param_name(device_id)
+
+                resp = self._client.read_holding_registers(address=address, count=count, **device_kw)  # type: ignore[arg-type]
                 return ModbusResponse(resp)
             except (ModbusIOException, ConnectionException, ModbusException) as exc:
                 return ModbusResponseError(exc)
 
     # ---- Async helper ----
-    async def async_read_holding_registers(
-        self, address: int, count: int, device_id: int
-    ) -> ModbusResponse:
+    async def async_read_holding_registers(self, address: int, count: int, device_id: int) -> ModbusResponse:
         """Async wrapper for read_holding_registers."""
         # TODO - Move to real async.  Eliminate run_in_executor calls.
-        # TODO - This will require a move to pymodbus >= 3.5
+        #  This will require a move to pymodbus >= 3.5 thus Home Assistant 2024.3 or later
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None, self.read_holding_registers, address, count, device_id
-        )
+        return await loop.run_in_executor(None, self.read_holding_registers, address, count, device_id)
 
-    # ---- Helper ----
+    # ---- Helper for slave/device_id ------
     def _get_device_id_param_name(self, device_id: int) -> dict[str, int]:
         """Return the correct keyword argument for PyModbus >=3.1.1."""
         if IS_PRIOR_TO_V3_10_0:

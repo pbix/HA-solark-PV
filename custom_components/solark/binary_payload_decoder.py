@@ -2,6 +2,7 @@
 
 from array import array
 from struct import pack, unpack
+import warnings
 
 from pymodbus.exceptions import ParameterException
 from pymodbus.logging import Log
@@ -103,9 +104,9 @@ class BinaryPayloadDecoder:
         return unpack(fmt, handle)[0]
 
     # Unsigned integers
-    def decode_8bit_uint(self):
-        """Decode 8-bit unsigned integer."""
-        return self._decode(self._byteorder + "B", 1)
+    # def decode_8bit_uint(self):
+    #     """Decode 8-bit unsigned integer."""
+    #     return self._decode(self._byteorder + "B", 1)
 
     def decode_16bit_uint(self):
         """Decode 16-bit unsigned integer."""
@@ -116,9 +117,9 @@ class BinaryPayloadDecoder:
         return self._decode("!I", 4, use_word_unpack=True)
 
     # Signed integers
-    def decode_8bit_int(self):
-        """Decode 8-bit signed integer."""
-        return self._decode(self._byteorder + "b", 1)
+    # def decode_8bit_int(self):
+    #     """Decode 8-bit signed integer."""
+    #     return self._decode(self._byteorder + "b", 1)
 
     def decode_16bit_int(self):
         """Decode 16-bit signed integer."""
@@ -137,4 +138,5 @@ class BinaryPayloadDecoder:
 
     def skip_bytes(self, nbytes):
         """Skip given number of bytes."""
+        warnings.warn("skip_bytes is deprecated.", category=DeprecationWarning, stacklevel=2)
         self._pointer += nbytes

@@ -1,9 +1,8 @@
 """Configuration schema."""
 
-import voluptuous as vol
-
-from homeassistant.const import CONF_HOST, CONF_NAME, CONF_SCAN_INTERVAL
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_SCAN_INTERVAL
 
 
 def get_schema(name: str, host: str, scan_interval: int) -> vol.Schema:
@@ -15,15 +14,16 @@ def get_reconfig_schema(host: str, scan_interval: int) -> vol.Schema:
     """Get the reconfiguration data schema."""
     return vol.Schema(_get_reconfig_schema_entries(host, scan_interval))
 
-
-def _get_schema_entries(name: str, host: str, scan_interval: int) -> set:
+def _get_schema_entries(name: str, host: str, scan_interval: int) -> dict:
     """Get the full data schema."""
-    return {
+    schema = {
         vol.Required(CONF_NAME, default=name): cv.string,
-    } | _get_reconfig_schema_entries(host, scan_interval)
+    }
+    schema.update(_get_reconfig_schema_entries(host, scan_interval))
+    return schema
 
 
-def _get_reconfig_schema_entries(host: str, scan_interval: int) -> set:
+def _get_reconfig_schema_entries(host: str, scan_interval: int) -> dict:
     """Get the reconfiguration data schema."""
     return {
         vol.Required(CONF_HOST, default=host): cv.string,
