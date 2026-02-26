@@ -536,7 +536,6 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
     ),
-}
     "GridChargeCurrent": SolArkModbusSensorEntityDescription(
         name="Grid Charge Current",
         key=GRID_CHARGE_CURRENT_KEY,
@@ -558,6 +557,7 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         icon="mdi:transmission-tower-export",
         entity_registry_enabled_default=False,
     ),
+}
 
 """ TODO - Add others """
 FAULT_MESSAGES = {
