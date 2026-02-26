@@ -17,6 +17,9 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfTime,
 )
+GRID_CHARGE_CURRENT_KEY = "gridchg_a"
+GEN_CHARGE_ENABLE_KEY = "genchg_en"
+GRID_CHARGE_ENABLE_KEY = "gridchg_en"
 
 DOMAIN = "solark_modbus"
 DEFAULT_NAME = "SolArk"
@@ -534,6 +537,27 @@ SENSOR_TYPES: dict[str, list[SolArkModbusSensorEntityDescription]] = {
         entity_registry_enabled_default=False,
     ),
 }
+    "GridChargeCurrent": SolArkModbusSensorEntityDescription(
+        name="Grid Charge Current",
+        key=GRID_CHARGE_CURRENT_KEY,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        icon="mdi:current-dc",
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+    ),
+    "GenChargeEnable": SolArkModbusSensorEntityDescription(
+        name="Generator Charge Enabled (raw)",
+        key=GEN_CHARGE_ENABLE_KEY,
+        icon="mdi:engine",
+        entity_registry_enabled_default=False,
+    ),
+    "GridChargeEnable": SolArkModbusSensorEntityDescription(
+        name="Grid Charge Enabled (raw)",
+        key=GRID_CHARGE_ENABLE_KEY,
+        icon="mdi:transmission-tower-export",
+        entity_registry_enabled_default=False,
+    ),
 
 """ TODO - Add others """
 FAULT_MESSAGES = {
