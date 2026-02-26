@@ -20,8 +20,14 @@ from voluptuous.validators import Number
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import FAULT_MESSAGES, MODBUS_EXCEPTIONS
-
+#from .const import FAULT_MESSAGES, MODBUS_EXCEPTIONS
+from .const import (
+    FAULT_MESSAGES,
+    MODBUS_EXCEPTIONS,
+    GRID_CHARGE_CURRENT_KEY,
+    GEN_CHARGE_ENABLE_KEY,
+    GRID_CHARGE_ENABLE_KEY,
+)
 _LOGGER = logging.getLogger(__name__)
 
 # There is another breaking change starting at pymodbus v3.4.7
@@ -359,7 +365,88 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         result.isError = lambda: True
         result.error_message = ModbusException(err)
         return result
+    def _write_single_register(self, address: int, value: int) -> bool:
+        """Write a single holding register with robust error handling.
 
+        This mirrors the version-handling logic used in _read_holding_registers().
+        Returns True on success, False on any Modbus/connection error.
+        """
+        with self._lock:
+            try:
+                # pymodbus v2.x
+                if hasattr(pymodbus, "__version__") and (pyversion[0] == 2):
+                    result = self._client.write_register(address, value, unit=self.slaveno)
+                # pymodbus v3.x before 3.10 uses 'slave'
+                elif (
+                    hasattr(pymodbus, "__version__")
+                    and (pyversion[0] == 3)
+                    and (pyversion[1] < 10)
+                ):
+                    result = self._client.write_register(
+                        address=address, value=value, slave=self.slaveno
+                    )
+                else:
+                    # pymodbus 3.10+ uses 'device_id'
+                    result = self._client.write_register(
+                        address=address, value=value, device_id=self.slaveno
+                    )
+
+                if getattr(result, "isError", lambda: False)():
+                    code = getattr(result, "exception_code", None)
+                    if code:
+                        err = MODBUS_EXCEPTIONS.get(
+                            code, f"Unknown Modbus exception: {code}"
+                        )
+                    else:
+                        err = str(result)
+                    _LOGGER.warning(
+                        "Writing holding register %s Modbus error: %s", address, err
+                    )
+                    return False
+
+                return True
+
+            except (ModbusIOException, ConnectionException, ModbusException) as exc:
+                _LOGGER.warning(
+                    "Error writing holding register %s: %s", address, exc
+                )
+                return False
+
+    # ---- High-level helpers for specific SolArk / Deye registers ----
+
+    def set_grid_charge_current(self, amps: int) -> bool:
+        """Set grid charging current (register 128, 1A per step).
+
+        Clamps to [0, 105] to avoid crazy values.
+        """
+        if amps is None:
+            return False
+        if amps < 0:
+            amps = 0
+        if amps > 105:
+            amps = 105
+
+        success = self._write_single_register(128, int(amps))
+        if success:
+            # Update cached value so HA sees the new state immediately
+            self.data[GRID_CHARGE_CURRENT_KEY] = int(amps)
+        return success
+
+    def set_grid_charge_enable(self, enable: bool) -> bool:
+        """Enable/disable grid charge (register 130, 0/1)."""
+        val = 1 if enable else 0
+        success = self._write_single_register(130, val)
+        if success:
+            self.data[GRID_CHARGE_ENABLE_KEY] = val
+        return success
+
+    def set_gen_charge_enable(self, enable: bool) -> bool:
+        """Enable/disable generator charge (register 129, 0/1)."""
+        val = 1 if enable else 0
+        success = self._write_single_register(129, val)
+        if success:
+            self.data[GEN_CHARGE_ENABLE_KEY] = val
+        return success
     async def _async_update_data(self) -> dict:
         """Read the data from the inverter and return it as a dictionary."""
         realtime_data = {}
@@ -494,6 +581,22 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             data["pv3_c"] = decoder.decode_16bit_uint() / 10.0
             updated = True
 
+                # Read grid / generator charge configuration registers (128–130)
+        realtime_data = self._read_holding_registers(
+            unit=self.slaveno, address=128, count=3
+        )
+        if not realtime_data.isError():
+            decoder = BinaryPayloadDecoder.fromRegisters(
+                realtime_data.registers, byteorder=">"
+            )
+            # R128: Mains charging current to battery (1A units)
+            data[GRID_CHARGE_CURRENT_KEY] = decoder.decode_16bit_uint()
+            # R129: Generator charging enable (0/1)
+            data[GEN_CHARGE_ENABLE_KEY] = decoder.decode_16bit_uint()
+            # R130: Mains/grid charging enable (0/1)
+            data[GRID_CHARGE_ENABLE_KEY] = decoder.decode_16bit_uint()
+            updated = True
+            
         realtime_data = self._read_holding_registers(
             unit=self.slaveno, address=150, count=21
         )
