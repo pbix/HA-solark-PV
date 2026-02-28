@@ -28,12 +28,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][name] = {"hub": hub}
 
+    # Make sure the first data read completes before adding entities. This prevents empty/None data
+    await hub.async_config_entry_first_refresh()
+
+    # Forward to the normal sensor platform
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant | None, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload SolArk mobus entry."""
     unload_ok = all(
         await asyncio.gather(
