@@ -13,7 +13,7 @@ from .const import (
     DOMAIN,
 )
 from .hub import SolArkModbusHub
-from .register_map import SolArkModbusSensorEntityDescription
+from .sensor_entity_description import SolArkModbusSensorEntityDescription
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -94,6 +94,7 @@ class SolArkConfigInfoSensor(SensorEntity):
         self._attr_device_info = device_info
         self._attr_unique_id = f"{entry.entry_id}_config_info"
         self._attr_name = f"{hub_name} Configuration"
+        self.icon = "mdi:message-alert-outline"
 
     @property
     def native_value(self):

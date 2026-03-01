@@ -118,6 +118,11 @@ secrets.yaml
 # mypy
 .mypy_cache/
 
+.pylintrc
+pyproject.toml
+
+.ignored
+
 .vscode
 .vscode/
 .vscode/*

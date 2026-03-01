@@ -5,7 +5,6 @@ from typing import Any, Callable, Generic, Iterator, Optional, TypeVar, Union
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
-    SensorEntityDescription,
     SensorStateClass,
 )
 from homeassistant.const import (
@@ -18,6 +17,8 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfTemperature,
 )
+
+from .sensor_entity_description import SolArkModbusSensorEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -82,38 +83,6 @@ NumericValue = Union[int, float]
 DIAGNOSTIC = EntityCategory.DIAGNOSTIC
 # TODO - Add config entities
 CONFIG = EntityCategory.CONFIG
-
-
-# ----------------------------------
-# Sensor Entity Description
-# ----------------------------------
-@dataclass(kw_only=True, frozen=True)
-class SolArkModbusSensorEntityDescription(SensorEntityDescription):
-    """A class that describes SolArk sensor entities."""
-
-    key: str
-    name: str | None = None
-    native_unit_of_measurement: str | None = None
-    device_class: SensorDeviceClass | None = None
-    state_class: SensorStateClass | None = None
-    icon: str | None = None
-    entity_registry_enabled_default: bool = True
-    entity_category: EntityCategory | None = None
-    description: str | None = None
-
-    @classmethod
-    def from_register_map_entry(cls, entry: RegisterMapEntry) -> SolArkModbusSensorEntityDescription:
-        return SolArkModbusSensorEntityDescription(
-            name=entry.name,
-            key=entry.key,
-            native_unit_of_measurement=entry.native_unit_of_measurement.value,
-            device_class=entry.device_class.value,
-            state_class=entry.state_class.value,
-            icon=entry.icon or None,
-            entity_registry_enabled_default=entry.entity_registry_enabled_default,
-            entity_category=entry.entity_category,
-            description=entry.description,
-        )
 
 
 # ----------------------------------
@@ -223,6 +192,19 @@ class RegisterMapEntry:
             return self.string_register_length
         raise ValueError(f"Unknown DataType {self.data_type} for {self.key}")
 
+    def from_register_map_entry(self) -> SolArkModbusSensorEntityDescription:
+        return SolArkModbusSensorEntityDescription(
+            name=self.name,
+            key=self.key,
+            native_unit_of_measurement=self.native_unit_of_measurement.value,
+            device_class=self.device_class.value,
+            state_class=self.state_class.value,
+            icon=self.icon or None,
+            entity_registry_enabled_default=self.entity_registry_enabled_default,
+            entity_category=self.entity_category,
+            description=self.description,
+        )
+
 
 # ----------------------------------
 # Type variable for the real subclass
@@ -303,7 +285,7 @@ class RegisterMap(Generic[T]):
         return len(self._map) == 0
 
     def sensor_types(self) -> dict[str, SolArkModbusSensorEntityDescription]:
-        return {entry.key: SolArkModbusSensorEntityDescription.from_register_map_entry(entry) for entry in self._sorted}
+        return {entry.key: entry.from_register_map_entry() for entry in self._sorted}
 
     def init(self):
         """Initialize the register map before reading registers. This can be used to reset any calculated values or error flags."""
