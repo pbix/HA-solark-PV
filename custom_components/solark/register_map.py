@@ -192,7 +192,6 @@ class RegisterMapEntry:
             return self.string_register_length
         raise ValueError(f"Unknown DataType {self.data_type} for {self.key}")
 
-    @classmethod
     def from_register_map_entry(self) -> SolArkModbusSensorEntityDescription:
         return SolArkModbusSensorEntityDescription(
             name=self.name,
