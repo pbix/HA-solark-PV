@@ -53,8 +53,10 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         config = SolArkConfig.from_url(hostname)
 
         if config.connection_type == ConnectionType.TCP:
+            # TODO - Add error handling here
             self._client = ModbusClientWrapper(host=config.host, port=config.port)
         elif config.connection_type == ConnectionType.SERIAL:
+            # TODO - Add error handling here
             self._client = ModbusClientWrapper(serial_port=config.serial_port, baudrate=9600)
 
         self.device_id = config.device_id
@@ -97,7 +99,9 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             # Read realtime data
             await self.hass.async_add_executor_job(self._read_modbus_realtime_data)
 
-            await self.hass.async_add_executor_job(self._post_process_register_map_entries)
+            # If we already have a read failure, post processing is unnecessary and may fail as well
+            if not self.register_map.is_error():
+                await self.hass.async_add_executor_job(self._post_process_register_map_entries)
 
             data = self._handle_results()
 

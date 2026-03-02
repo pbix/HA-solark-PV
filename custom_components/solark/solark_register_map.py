@@ -722,6 +722,11 @@ class SolArkRegisterMap(RegisterMap["SolArkRegisterMap"]):
     )
 
     @staticmethod
+    def value_is_injected(register_map: "SolArkRegisterMap", entry: RegisterMapEntry):
+        # Value is injected into the data dictionary
+        return
+
+    @staticmethod
     def fault_code_to_message(register_map: "SolArkRegisterMap", entry: RegisterMapEntry):
         fault_message_list = translate_fault_code_to_messages(int(register_map.FAULT_INFO_RAW))
         entry.register_value = ", ".join(fault_message_list)
@@ -784,4 +789,14 @@ class SolArkRegisterMap(RegisterMap["SolArkRegisterMap"]):
         entity_registry_enabled_default=False,
         post_process_method=gen_relay_status,
         description="Indicates the status of the generator relay based on raw register values.",
+    )
+
+    UPDATE_COUNTER = RegisterMapEntry(
+        source_is_register_read=False,
+        key="update_cnt",
+        data_type=DataType.INT16,
+        name="Update Counter",
+        icon="mdi:information-outline",
+        state_class=StateClass.TOTAL,
+        post_process_method=value_is_injected,
     )
