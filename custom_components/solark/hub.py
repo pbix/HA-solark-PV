@@ -6,7 +6,7 @@ from typing import Iterator
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .config import SolArkConfig, ConnectionType
+from .config import ConnectionType, SolArkConfig
 from .const import DEFAULT_MAX_STALE_DATA_AGE, MODBUS_EXCEPTIONS
 from .pymodbus_wrapper import ModbusClientWrapper, ModbusResponse
 from .register_map import (
@@ -53,10 +53,8 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         config = SolArkConfig.from_url(hostname)
 
         if config.connection_type == ConnectionType.TCP:
-            # TODO - Add error handling here
             self._client = ModbusClientWrapper(host=config.host, port=config.port)
         elif config.connection_type == ConnectionType.SERIAL:
-            # TODO - Add error handling here
             self._client = ModbusClientWrapper(serial_port=config.serial_port, baudrate=9600)
 
         self.device_id = config.device_id
