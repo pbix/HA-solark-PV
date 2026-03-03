@@ -26,6 +26,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hub = SolArkModbusHub(hass, name, host, scan_interval)
     # Register the hub.
     hass.data.setdefault(DOMAIN, {})
+    # TODO - This can fail if the name is changed in reconfigure. Use guaranteed unique id. Replace with:
+    #  hub_entry_id = entry.entry_id
+    #  hass.data[DOMAIN][entry_id] = {"hub": hub}
     hass.data[DOMAIN][name] = {"hub": hub}
 
     # Make sure the first data read completes before adding entities. This prevents empty/None data
@@ -38,7 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload SolArk mobus entry."""
+    """Unload SolArk Modbus entry."""
     unload_ok = all(
         await asyncio.gather(
             *[
@@ -50,5 +53,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not unload_ok:
         return False
 
-    hass.data[DOMAIN].pop(entry.data["name"])
+    # Stop the coordinator safely and close the Modbus client
+    name = entry.data[CONF_NAME]
+    # TODO - This can fail if the name is changed in reconfigure. Use guaranteed unique id. Replace with:
+    #  hub_entry_id = entry.entry_id
+    #  hub: SolArkModbusHub = hass.data[DOMAIN][entry_id]["hub"]
+    hub: SolArkModbusHub = hass.data[DOMAIN][name]["hub"]
+    await hub.async_stop()  # cancels updates
+
+    # Remove hub reference
+    hass.data[DOMAIN].pop(name)
+
     return True

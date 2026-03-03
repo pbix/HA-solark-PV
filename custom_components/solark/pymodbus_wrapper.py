@@ -101,7 +101,7 @@ class ModbusResponseError(ModbusResponse):
 class ModbusClientWrapper:
     """Thread-safe and async wrapper for Modbus TCP/Serial."""
 
-    __slots__ = ("_client", "_connection_lock", "_lock", "_connected")
+    __slots__ = ("_client", "_lock", "_connected")
 
     def __init__(
         self,
@@ -111,7 +111,6 @@ class ModbusClientWrapper:
         baudrate: int = 9600,
     ) -> None:
         """Create a Modbus client wrapper (TCP or Serial)."""
-        self._connection_lock = threading.Lock()  # For connect/disconnect
         self._lock = threading.Lock()  # For reads
         self._connected = False
 
@@ -131,7 +130,7 @@ class ModbusClientWrapper:
             raise ValueError("Either host or serial_port must be provided")
 
     # ---- Connection handling ----
-    def ensure_connected(self) -> None:
+    def _ensure_connected(self) -> None:
         """Ensure the Modbus client is connected.
 
         PyModbus attempts to handle reconnect in many situations, but not all.
@@ -143,25 +142,17 @@ class ModbusClientWrapper:
         if self._connected:
             return
 
-        with self._connection_lock:
-            if self._connected:
-                return
+        if not self._client.connect():
+            raise ConnectionException("Modbus connection failed")
 
-            if not self._client.connect():
-                raise ConnectionException("Modbus connection failed")
-
-            self._connected = True
-
-    def mark_disconnected(self) -> None:
-        """Force reconnect on next call."""
-        self._connected = False
+        self._connected = True
 
     # ---- Sync read ----
     def read_holding_registers(self, address: int, count: int, device_id: int) -> ModbusResponse:
         """Read holding registers in a thread-safe way."""
         with self._lock:
             try:
-                self.ensure_connected()
+                self._ensure_connected()
 
                 device_kw = self._get_device_id_param_name(device_id)
 
@@ -190,5 +181,7 @@ class ModbusClientWrapper:
     def close(self) -> None:
         """Close the underlying client."""
         with self._lock:
-            self._client.close()
-        self._connected = False
+            try:
+                self._client.close()
+            finally:
+                self._connected = False
