@@ -58,10 +58,22 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # TODO - This can fail if the name is changed in reconfigure. Use guaranteed unique id. Replace with:
     #  hub_entry_id = entry.entry_id
     #  hub: SolArkModbusHub = hass.data[DOMAIN][entry_id]["hub"]
-    hub: SolArkModbusHub = hass.data[DOMAIN][name]["hub"]
-    await hub.async_stop()  # cancels updates
+    hub_data = hass.data.get(DOMAIN, {}).get(name)
+    if hub_data is None:
+        _LOGGER.warning(
+            "Tried to unload hub '%s', but it was never loaded or already removed", name
+        )
+        return True  # HA expects True even if nothing to unload
 
-    # Remove hub reference
-    hass.data[DOMAIN].pop(name)
+    hub: SolArkModbusHub = hub_data["hub"]
+    try:
+        await hub.async_stop()  # cancels updates
+        _LOGGER.info("Stopped SolArk hub '%s'", name)
+    except Exception as exc:
+        _LOGGER.error("Error stopping SolArk hub '%s': %s", name, exc, exc_info=True)
+
+    # Remove hub reference safely
+    hass.data[DOMAIN].pop(name, None)
+    _LOGGER.debug("Removed hub reference for '%s'", name)
 
     return True
