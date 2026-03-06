@@ -4,6 +4,7 @@ Provides:
 - Automatic client import handling for TCP and Serial
 - Automatic keyword argument mapping for slave/device_id
 - Thread-safe read/write operations
+- Automatic connection failure handling
 - Normalized response object with `.registers` and `.isError()`
 
 Home Assistant Version  Pymodbus Version   Python Version
@@ -100,7 +101,7 @@ class ModbusResponseError(ModbusResponse):
 class ModbusClientWrapper:
     """Thread-safe and async wrapper for Modbus TCP/Serial."""
 
-    __slots__ = ("_client", "_lock")
+    __slots__ = ("_client", "_lock", "_connected")
 
     def __init__(
         self,
@@ -110,7 +111,8 @@ class ModbusClientWrapper:
         baudrate: int = 9600,
     ) -> None:
         """Create a Modbus client wrapper (TCP or Serial)."""
-        self._lock = threading.Lock()
+        self._lock = threading.Lock()  # For reads
+        self._connected = False
 
         if serial_port is not None:
             if IS_PRIOR_TO_V3_5_0:
@@ -127,19 +129,37 @@ class ModbusClientWrapper:
         else:
             raise ValueError("Either host or serial_port must be provided")
 
+    # ---- Connection handling ----
+    def _ensure_connected(self) -> None:
+        """Ensure the Modbus client is connected.
+
+        PyModbus attempts to handle reconnect in many situations, but not all.
+        It is an undocumented feature. A failure in the pymodbus client creation
+        used to leave the hub in an unrecoverable state. By explicitly handling it,
+        we handle a failure at any point, as well as any reconnection attempt that
+        pymodbus does not handle properly."""
+
+        if self._connected:
+            return
+
         if not self._client.connect():
             raise ConnectionException("Modbus connection failed")
+
+        self._connected = True
 
     # ---- Sync read ----
     def read_holding_registers(self, address: int, count: int, device_id: int) -> ModbusResponse:
         """Read holding registers in a thread-safe way."""
         with self._lock:
             try:
+                self._ensure_connected()
+
                 device_kw = self._get_device_id_param_name(device_id)
 
                 resp = self._client.read_holding_registers(address=address, count=count, **device_kw)  # type: ignore[arg-type]
                 return ModbusResponse(resp)
             except (ModbusIOException, ConnectionException, ModbusException) as exc:
+                self._connected = False
                 return ModbusResponseError(exc)
 
     # ---- Async helper ----
@@ -161,4 +181,7 @@ class ModbusClientWrapper:
     def close(self) -> None:
         """Close the underlying client."""
         with self._lock:
-            self._client.close()
+            try:
+                self._client.close()
+            finally:
+                self._connected = False

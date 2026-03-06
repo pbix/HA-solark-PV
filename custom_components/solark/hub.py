@@ -6,7 +6,7 @@ from typing import Iterator
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .config import SolArkConfig, ConnectionType
+from .config import ConnectionType, SolArkConfig
 from .const import DEFAULT_MAX_STALE_DATA_AGE, MODBUS_EXCEPTIONS
 from .pymodbus_wrapper import ModbusClientWrapper, ModbusResponse
 from .register_map import (
@@ -53,10 +53,8 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         config = SolArkConfig.from_url(hostname)
 
         if config.connection_type == ConnectionType.TCP:
-            # TODO - Add error handling here
             self._client = ModbusClientWrapper(host=config.host, port=config.port)
         elif config.connection_type == ConnectionType.SERIAL:
-            # TODO - Add error handling here
             self._client = ModbusClientWrapper(serial_port=config.serial_port, baudrate=9600)
 
         self.device_id = config.device_id
@@ -75,17 +73,15 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         if not self._listeners:
             self.close()
 
+    async def async_stop(self, *_):
+        """Ensure the client is closed on HA shutdown."""
+        if self._client:
+            await self.hass.async_add_executor_job(self.close)
+
     def close(self) -> None:
         """Close the Modbus client connection safely."""
         with self._lock:
             self._client.close()
-
-    async def ensure_initialized(self):
-        """Ensure the hub is initialized by performing the first data read."""
-        if not self.has_inverter_data:
-            await self._async_update_data()
-            self.has_inverter_data = True
-        return self.data
 
     async def _async_update_data(self) -> dict:
         """Read the data from the inverter and return it as a dictionary."""
