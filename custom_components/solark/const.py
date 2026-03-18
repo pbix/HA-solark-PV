@@ -65,8 +65,8 @@ MODBUS_EXCEPTIONS = {
 }
 
 GRID_RELAY_STATUS: dict[int, str] = {
-    0: "Closed",
-    1: "Open",
+    0: "Open",
+    1: "Closed",
 }
 
 GEN_RELAY_STATUS: dict[int, str] = {
