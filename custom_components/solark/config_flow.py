@@ -4,10 +4,12 @@ from urllib.parse import urlparse
 
 from homeassistant.config_entries import (
     CONN_CLASS_LOCAL_POLL,
+    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
+    OptionsFlow,
 )
-from homeassistant.const import CONF_HOST, CONF_SCAN_INTERVAL
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant, callback
 
 from . import config_schema
@@ -100,4 +102,28 @@ class SolArkModbusConfigFlow(ConfigFlow, domain=DOMAIN):
                 existing_entry.data[CONF_SCAN_INTERVAL],
             ),
             errors=errors,
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return SolArkModbusOptionsFlowHandler()
+
+
+class SolArkModbusOptionsFlowHandler(OptionsFlow):
+    """Handle a SolArk Modbus options flow."""
+
+    async def async_step_init(self, user_input=None):
+        """Handle options flow initialization."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=config_schema.get_schema(
+                self.config_entry.data.get(CONF_NAME, DEFAULT_NAME),
+                self.config_entry.data.get(CONF_HOST, DEFAULT_HOST),
+                self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+            ),
         )
