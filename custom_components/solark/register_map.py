@@ -109,6 +109,10 @@ class RegisterMapEntry:
     entity_category: EntityCategory | None = None
     post_process_method: Optional[Callable[[Any, "RegisterMapEntry"], None]] = None
     description: str | None = None
+    ha_platform: str | None = None  # Optional platform override (number, switch, time)
+    step: float | None = None  # Optional step value for number entities
+    min_value: float | None = None  # Optional min value for number entities
+    max_value: float | None = None  # Optional max value for number entities
 
     last_read_successful: bool = False
 
@@ -192,18 +196,24 @@ class RegisterMapEntry:
             return self.string_register_length
         raise ValueError(f"Unknown DataType {self.data_type} for {self.key}")
 
-    def from_register_map_entry(self) -> SolArkModbusSensorEntityDescription:
-        return SolArkModbusSensorEntityDescription(
-            name=self.name,
-            key=self.key,
-            native_unit_of_measurement=self.native_unit_of_measurement.value,
-            device_class=self.device_class.value,
-            state_class=self.state_class.value,
-            icon=self.icon or None,
-            entity_registry_enabled_default=self.entity_registry_enabled_default,
-            entity_category=self.entity_category,
-            description=self.description,
-        )
+    def from_register_map_entry(self) -> dict[str, Any]:
+        """Convert the RegisterMapEntry into common entity description arguments."""
+        return {
+            "name": self.name,
+            "key": self.key,
+            "native_unit_of_measurement": self.native_unit_of_measurement.value if self.native_unit_of_measurement else None,
+            "device_class": self.device_class.value if self.device_class else None,
+            "state_class": self.state_class.value if self.state_class else None,
+            "icon": self.icon or None,
+            "entity_registry_enabled_default": self.entity_registry_enabled_default,
+            "entity_category": self.entity_category,
+            "description": self.description,
+            "address": self.address,
+            "native_min_value": self.min_value,
+            "native_max_value": self.max_value,
+            "native_step": self.step,
+            "scale": self.scale,
+        }
 
 
 # ----------------------------------
@@ -284,8 +294,65 @@ class RegisterMap(Generic[T]):
     def is_empty(self) -> bool:
         return len(self._map) == 0
 
-    def sensor_types(self) -> dict[str, SolArkModbusSensorEntityDescription]:
-        return {entry.key: entry.from_register_map_entry() for entry in self._sorted}
+    def sensor_types(self) -> dict[str, Any]:
+        """Return the sensor types."""
+        from .sensor_entity_description import SolArkModbusSensorEntityDescription
+        allowed = {"name", "key", "device_class", "state_class", "native_unit_of_measurement", "icon", "entity_category", "entity_registry_enabled_default", "address"}
+        return {
+            entry.key: SolArkModbusSensorEntityDescription(
+                **{k: v for k, v in entry.from_register_map_entry().items() if k in allowed}
+            )
+            for entry in self._sorted if entry.ha_platform in (None, "sensor")
+        }
+
+    def number_types(self) -> dict[str, Any]:
+        """Return the number types."""
+        from .number import SolArkModbusNumberEntityDescription
+        allowed = {"name", "key", "device_class", "native_unit_of_measurement", "icon", "entity_category", "entity_registry_enabled_default", "address", "native_min_value", "native_max_value", "native_step", "scale"}
+        return {
+            entry.key: SolArkModbusNumberEntityDescription(
+                **{k: v for k, v in entry.from_register_map_entry().items() if k in allowed}
+            )
+            for entry in self._sorted if entry.ha_platform == "number"
+        }
+
+    def switch_types(self) -> dict[str, Any]:
+        """Return the switch types."""
+        from .switch import SolArkModbusSwitchEntityDescription
+        allowed = {"name", "key", "device_class", "icon", "entity_category", "entity_registry_enabled_default", "address"}
+        return {
+            entry.key: SolArkModbusSwitchEntityDescription(
+                **{k: v for k, v in entry.from_register_map_entry().items() if k in allowed}
+            )
+            for entry in self._sorted if entry.ha_platform == "switch"
+        }
+
+    def time_types(self) -> dict[str, Any]:
+        """Return the time types."""
+        from .time import SolArkModbusTimeEntityDescription
+        allowed = {"name", "key", "device_class", "icon", "entity_category", "entity_registry_enabled_default", "address"}
+        return {
+            entry.key: SolArkModbusTimeEntityDescription(
+                **{k: v for k, v in entry.from_register_map_entry().items() if k in allowed}
+            )
+            for entry in self._sorted if entry.ha_platform == "time"
+        }
+
+    def select_types(self) -> dict[str, Any]:
+        """Return the select types."""
+        from .select import SolArkModbusSelectEntityDescription
+        allowed = {"name", "key", "device_class", "icon", "entity_category", "entity_registry_enabled_default", "address", "options"}
+        
+        # Default options for TOU Charge & Sell
+        tou_options = ["None", "Charge", "Sell", "Charge & Sell"]
+        
+        return {
+            entry.key: SolArkModbusSelectEntityDescription(
+                **{k: v for k, v in entry.from_register_map_entry().items() if k in allowed},
+                options=tou_options if entry.ha_platform == "select" else []
+            )
+            for entry in self._sorted if entry.ha_platform == "select"
+        }
 
     def init(self):
         """Initialize the register map before reading registers. This can be used to reset any calculated values or error flags."""

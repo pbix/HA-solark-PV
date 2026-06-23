@@ -129,6 +129,10 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         self._process_register_range(self.register_map.GRIDL1N_V, self.register_map.GRIDLMTL1_P)  # R150 - R170
         self._process_register_range(self.register_map.GRIDLMTL2_P, self.register_map.PV3_P)  # R171 - R188
         self._process_register_range(self.register_map.BATT_P, self.register_map.GEN_FREQ)  # R190 - R196
+        self._process_register_range(self.register_map.BATT_MEASURE_MODE_RAW)  # R213
+        self._process_register_range(self.register_map.BATT_CHARGE_CURRENT_LIMIT)  # R230
+        self._process_register_range(self.register_map.TOU_DAYS)  # R248
+        self._process_register_range(self.register_map.TOU1_TIME, self.register_map.TOU6_CHARGE_SELL)  # R250 - R279
 
     def _post_process_register_map_entries(self):
         """Post-process the register map entries after reading the raw values from the inverter."""
@@ -279,3 +283,20 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
             _LOGGER.warning("Reading holding registers Modbus error: %s", err)
 
         return result
+    async def async_write_register(self, address: int, value: int) -> bool:
+        """Write to a single register on the inverter."""
+        _LOGGER.debug("Writing to register %d: %d", address, value)
+        try:
+            result = await self._client.async_write_register(
+                address=address, value=value, device_id=self.device_id
+            )
+            if result.is_error:
+                _LOGGER.error("Failed to write to register %d: %s", address, result.error)
+                return False
+            
+            # Immediately request a refresh to update the UI with the new value
+            await self.async_request_refresh()
+            return True
+        except Exception as e:
+            _LOGGER.exception("Unexpected error writing to register %d: %s", address, e)
+            return False

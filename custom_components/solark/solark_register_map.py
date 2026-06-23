@@ -2,9 +2,9 @@
 
 from typing import TypeVar
 
-from .const import GEN_RELAY_STATUS, GRID_RELAY_STATUS
+from .const import BATT_MEASURE_MODE, GEN_RELAY_STATUS, GRID_RELAY_STATUS, TOU_MODE
 from .fault_info import translate_fault_code_to_messages
-from .register_map import DIAGNOSTIC, DataType, DeviceClass, NativeUnit, RegisterMap, RegisterMapEntry, StateClass
+from .register_map import CONFIG, DIAGNOSTIC, DataType, DeviceClass, NativeUnit, RegisterMap, RegisterMapEntry, StateClass
 
 T = TypeVar("T", bound="RegisterMap")  # T is the real subclass
 
@@ -720,6 +720,353 @@ class SolArkRegisterMap(RegisterMap["SolArkRegisterMap"]):
         state_class=StateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
     )
+    BATT_MEASURE_MODE_RAW = RegisterMapEntry(
+        address=213,
+        key="batt_measure_mode_raw",
+        data_type=DataType.UINT16,
+        name="Battery Measurement Mode Raw Value",
+        icon="mdi:battery-settings",
+        state_class=StateClass.NONE,
+        entity_registry_enabled_default=False,
+        entity_category=DIAGNOSTIC,
+        ha_platform="none",
+    )
+    BATT_CHARGE_CURRENT_LIMIT = RegisterMapEntry(
+        address=230,
+        key="battery_charge_current_limit",
+        data_type=DataType.UINT16,
+        name="Battery Charge Current Limit",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.A,
+        min_value=0,
+        max_value=120,
+        step=1,
+        entity_category=CONFIG,
+    )
+
+    # Time of Use Registers
+    TOU1_TIME = RegisterMapEntry(
+        address=250,
+        key="tou1_time",
+        data_type=DataType.UINT16,
+        name="TOU1 Time",
+        ha_platform="time",
+        entity_category=CONFIG,
+    )
+    TOU2_TIME = RegisterMapEntry(
+        address=251,
+        key="tou2_time",
+        data_type=DataType.UINT16,
+        name="TOU2 Time",
+        ha_platform="time",
+        entity_category=CONFIG,
+    )
+    TOU3_TIME = RegisterMapEntry(
+        address=252,
+        key="tou3_time",
+        data_type=DataType.UINT16,
+        name="TOU3 Time",
+        ha_platform="time",
+        entity_category=CONFIG,
+    )
+    TOU4_TIME = RegisterMapEntry(
+        address=253,
+        key="tou4_time",
+        data_type=DataType.UINT16,
+        name="TOU4 Time",
+        ha_platform="time",
+        entity_category=CONFIG,
+    )
+    TOU5_TIME = RegisterMapEntry(
+        address=254,
+        key="tou5_time",
+        data_type=DataType.UINT16,
+        name="TOU5 Time",
+        ha_platform="time",
+        entity_category=CONFIG,
+    )
+    TOU6_TIME = RegisterMapEntry(
+        address=255,
+        key="tou6_time",
+        data_type=DataType.UINT16,
+        name="TOU6 Time",
+        ha_platform="time",
+        entity_category=CONFIG,
+    )
+
+    TOU1_POWER = RegisterMapEntry(
+        address=256,
+        key="tou1_power",
+        data_type=DataType.UINT16,
+        name="TOU1 Power",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.WATT,
+        min_value=100,
+        max_value=8000,
+        step=100,
+        entity_category=CONFIG,
+    )
+    TOU2_POWER = RegisterMapEntry(
+        address=257,
+        key="tou2_power",
+        data_type=DataType.UINT16,
+        name="TOU2 Power",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.WATT,
+        min_value=100,
+        max_value=8000,
+        step=100,
+        entity_category=CONFIG,
+    )
+    TOU3_POWER = RegisterMapEntry(
+        address=258,
+        key="tou3_power",
+        data_type=DataType.UINT16,
+        name="TOU3 Power",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.WATT,
+        min_value=100,
+        max_value=8000,
+        step=100,
+        entity_category=CONFIG,
+    )
+    TOU4_POWER = RegisterMapEntry(
+        address=259,
+        key="tou4_power",
+        data_type=DataType.UINT16,
+        name="TOU4 Power",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.WATT,
+        min_value=100,
+        max_value=8000,
+        step=100,
+        entity_category=CONFIG,
+    )
+    TOU5_POWER = RegisterMapEntry(
+        address=260,
+        key="tou5_power",
+        data_type=DataType.UINT16,
+        name="TOU5 Power",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.WATT,
+        min_value=100,
+        max_value=8000,
+        step=100,
+        entity_category=CONFIG,
+    )
+    TOU6_POWER = RegisterMapEntry(
+        address=261,
+        key="tou6_power",
+        data_type=DataType.UINT16,
+        name="TOU6 Power",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.WATT,
+        min_value=100,
+        max_value=8000,
+        step=100,
+        entity_category=CONFIG,
+    )
+
+    TOU1_VOLT = RegisterMapEntry(
+        address=262,
+        key="tou1_volt",
+        data_type=DataType.UINT16,
+        name="TOU1 Voltage",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.V,
+        scale=0.01,
+        min_value=40.00,
+        max_value=60.00,
+        step=0.01,
+        entity_category=CONFIG,
+    )
+    TOU2_VOLT = RegisterMapEntry(
+        address=263,
+        key="tou2_volt",
+        data_type=DataType.UINT16,
+        name="TOU2 Voltage",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.V,
+        scale=0.01,
+        min_value=40.00,
+        max_value=60.00,
+        step=0.01,
+        entity_category=CONFIG,
+    )
+    TOU3_VOLT = RegisterMapEntry(
+        address=264,
+        key="tou3_volt",
+        data_type=DataType.UINT16,
+        name="TOU3 Voltage",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.V,
+        scale=0.01,
+        min_value=40.00,
+        max_value=60.00,
+        step=0.01,
+        entity_category=CONFIG,
+    )
+    TOU4_VOLT = RegisterMapEntry(
+        address=265,
+        key="tou4_volt",
+        data_type=DataType.UINT16,
+        name="TOU4 Voltage",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.V,
+        scale=0.01,
+        min_value=40.00,
+        max_value=60.00,
+        step=0.01,
+        entity_category=CONFIG,
+    )
+    TOU5_VOLT = RegisterMapEntry(
+        address=266,
+        key="tou5_volt",
+        data_type=DataType.UINT16,
+        name="TOU5 Voltage",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.V,
+        scale=0.01,
+        min_value=40.00,
+        max_value=60.00,
+        step=0.01,
+        entity_category=CONFIG,
+    )
+    TOU6_VOLT = RegisterMapEntry(
+        address=267,
+        key="tou6_volt",
+        data_type=DataType.UINT16,
+        name="TOU6 Voltage",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.V,
+        scale=0.01,
+        min_value=40.00,
+        max_value=60.00,
+        step=0.01,
+        entity_category=CONFIG,
+    )
+
+    TOU1_SOC = RegisterMapEntry(
+        address=268,
+        key="tou1_soc",
+        data_type=DataType.UINT16,
+        name="TOU1 SOC",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.PERCENT,
+        min_value=5,
+        max_value=95,
+        step=1,
+        entity_category=CONFIG,
+    )
+    TOU2_SOC = RegisterMapEntry(
+        address=269,
+        key="tou2_soc",
+        data_type=DataType.UINT16,
+        name="TOU2 SOC",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.PERCENT,
+        min_value=5,
+        max_value=95,
+        step=1,
+        entity_category=CONFIG,
+    )
+    TOU3_SOC = RegisterMapEntry(
+        address=270,
+        key="tou3_soc",
+        data_type=DataType.UINT16,
+        name="TOU3 SOC",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.PERCENT,
+        min_value=5,
+        max_value=95,
+        step=1,
+        entity_category=CONFIG,
+    )
+    TOU4_SOC = RegisterMapEntry(
+        address=271,
+        key="tou4_soc",
+        data_type=DataType.UINT16,
+        name="TOU4 SOC",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.PERCENT,
+        min_value=5,
+        max_value=95,
+        step=1,
+        entity_category=CONFIG,
+    )
+    TOU5_SOC = RegisterMapEntry(
+        address=272,
+        key="tou5_soc",
+        data_type=DataType.UINT16,
+        name="TOU5 SOC",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.PERCENT,
+        min_value=5,
+        max_value=95,
+        step=1,
+        entity_category=CONFIG,
+    )
+    TOU6_SOC = RegisterMapEntry(
+        address=273,
+        key="tou6_soc",
+        data_type=DataType.UINT16,
+        name="TOU6 SOC",
+        ha_platform="number",
+        native_unit_of_measurement=NativeUnit.PERCENT,
+        min_value=5,
+        max_value=95,
+        step=1,
+        entity_category=CONFIG,
+    )
+
+    TOU1_CHARGE_SELL = RegisterMapEntry(
+        address=274,
+        key="tou1_charge_sell",
+        data_type=DataType.UINT16,
+        name="TOU1 Charge & Sell",
+        ha_platform="select",
+        entity_category=CONFIG,
+    )
+    TOU2_CHARGE_SELL = RegisterMapEntry(
+        address=275,
+        key="tou2_charge_sell",
+        data_type=DataType.UINT16,
+        name="TOU2 Charge & Sell",
+        ha_platform="select",
+        entity_category=CONFIG,
+    )
+    TOU3_CHARGE_SELL = RegisterMapEntry(
+        address=276,
+        key="tou3_charge_sell",
+        data_type=DataType.UINT16,
+        name="TOU3 Charge & Sell",
+        ha_platform="select",
+        entity_category=CONFIG,
+    )
+    TOU4_CHARGE_SELL = RegisterMapEntry(
+        address=277,
+        key="tou4_charge_sell",
+        data_type=DataType.UINT16,
+        name="TOU4 Charge & Sell",
+        ha_platform="select",
+        entity_category=CONFIG,
+    )
+    TOU5_CHARGE_SELL = RegisterMapEntry(
+        address=278,
+        key="tou5_charge_sell",
+        data_type=DataType.UINT16,
+        name="TOU5 Charge & Sell",
+        ha_platform="select",
+        entity_category=CONFIG,
+    )
+    TOU6_CHARGE_SELL = RegisterMapEntry(
+        address=279,
+        key="tou6_charge_sell",
+        data_type=DataType.UINT16,
+        name="TOU6 Charge & Sell",
+        ha_platform="select",
+        entity_category=CONFIG,
+    )
 
     @staticmethod
     def value_is_injected(register_map: "SolArkRegisterMap", entry: RegisterMapEntry):
@@ -744,6 +1091,39 @@ class SolArkRegisterMap(RegisterMap["SolArkRegisterMap"]):
     def gen_relay_status(register_map: "SolArkRegisterMap", entry: RegisterMapEntry):
         raw: int = int(register_map.GEN_RLY_RAW) & 0x0F  # mask low 4 bits
         entry.register_value = GEN_RELAY_STATUS.get(int(raw), "Unknown") if raw is not None else "Unknown"
+
+    @staticmethod
+    def batt_measure_mode_status(register_map: "SolArkRegisterMap", entry: RegisterMapEntry):
+        raw: int = int(register_map.BATT_MEASURE_MODE_RAW)
+        entry.register_value = BATT_MEASURE_MODE.get(int(raw), "Unknown") if raw is not None else "Unknown"
+
+    @staticmethod
+    def tou_days_status(register_map: "SolArkRegisterMap", entry: RegisterMapEntry):
+        raw = int(entry.register_value)
+        if not (raw & 0x01):
+            entry.register_value = "ALL DAYS OFF"
+            return
+
+        days = []
+        if raw & (1 << 1): days.append("Mon")
+        if raw & (1 << 2): days.append("Tue")
+        if raw & (1 << 3): days.append("Wed")
+        if raw & (1 << 4): days.append("Thu")
+        if raw & (1 << 5): days.append("Fri")
+        if raw & (1 << 6): days.append("Sat")
+        if raw & (1 << 7): days.append("Sun")
+        
+        entry.register_value = ", ".join(days) if days else "None"
+
+
+    TOU_DAYS = RegisterMapEntry(
+        address=248,
+        key="tou_days",
+        data_type=DataType.UINT16,
+        name="TOU DAYS",
+        post_process_method=tou_days_status,
+        entity_category=DIAGNOSTIC,
+    )
 
     FAULTMSG = RegisterMapEntry(
         source_is_register_read=False,
@@ -789,6 +1169,16 @@ class SolArkRegisterMap(RegisterMap["SolArkRegisterMap"]):
         entity_registry_enabled_default=False,
         post_process_method=gen_relay_status,
         description="Indicates the status of the generator relay based on raw register values.",
+    )
+    BATT_MEASURE_MODE = RegisterMapEntry(
+        source_is_register_read=False,
+        key="batt_measure_mode",
+        data_type=DataType.STRING,
+        name="Battery Measurement Mode",
+        icon="mdi:battery-outline",
+        state_class=StateClass.NONE,
+        entity_category=DIAGNOSTIC,
+        post_process_method=batt_measure_mode_status,
     )
 
     UPDATE_COUNTER = RegisterMapEntry(

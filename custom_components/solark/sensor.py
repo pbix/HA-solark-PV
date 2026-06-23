@@ -12,6 +12,7 @@ from .const import (
     ATTR_MANUFACTURER,
     DOMAIN,
 )
+from .entity import SolArkBaseEntity
 from .hub import SolArkModbusHub
 from .sensor_entity_description import SolArkModbusSensorEntityDescription
 
@@ -29,12 +30,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entities = []
 
     # Normal Modbus sensors
-    for sensor_description in hub.register_map.sensor_types().values():
+    for description in hub.register_map.sensor_types().values():
         sensor = SolArkSensor(
             hub_name,
             hub,
             device_info,
-            sensor_description,
+            description,
         )
         entities.append(sensor)
 
@@ -51,36 +52,26 @@ async def async_setup_entry(hass, entry, async_add_entities):
     return True
 
 
-class SolArkSensor(CoordinatorEntity, SensorEntity):
+class SolArkSensor(SolArkBaseEntity, SensorEntity):
     """Representation of a SolArk Modbus sensor."""
 
     def __init__(
         self,
-        platform_name: str,
+        hub_name: str,
         hub: SolArkModbusHub,
-        device_info,
+        device_info: DeviceInfo,
         description: SolArkModbusSensorEntityDescription,
-    ):
-        self._platform_name = platform_name
-        self._attr_device_info = device_info
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(hub_name, hub, device_info)
         self.entity_description: SolArkModbusSensorEntityDescription = description
-
-        super().__init__(coordinator=hub)
-
-    @property
-    def name(self):
-        return f"{self._platform_name} {self.entity_description.name}"
-
-    @property
-    def unique_id(self) -> Optional[str]:
-        return f"{self._platform_name}_{self.entity_description.key}"
+        self._attr_unique_id = f"{hub_name}_{description.key}"
+        self._attr_name = f"{hub_name} {description.name}"
 
     @property
     def native_value(self):
-        data = self.coordinator.data
-        if not data:
-            return None
-        return data.get(self.entity_description.key)
+        """Return the state of the sensor."""
+        return self.coordinator.data.get(self.entity_description.key)
 
 
 class SolArkConfigInfoSensor(SensorEntity):

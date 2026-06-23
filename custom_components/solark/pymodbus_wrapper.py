@@ -22,7 +22,9 @@ Home Assistant Version  Pymodbus Version   Python Version
 from __future__ import annotations
 
 import asyncio
+import logging
 import threading
+import time
 
 import pymodbus
 from packaging import version
@@ -59,6 +61,11 @@ class ModbusResponse:
         """Return the list of registers or None if unavailable."""
         return getattr(self._response, "registers", None)
 
+    @property
+    def is_error(self) -> bool:
+        """Return True if the response indicates an error."""
+        return self.isError()
+
     def isError(self) -> bool:  # pylint: disable=invalid-name
         """Return True if the response indicates an error."""
         if self._response is None:
@@ -76,11 +83,11 @@ class ModbusResponse:
 
     def __repr__(self) -> str:
         """Return a string representation of the ModbusResponse."""
-        return f"<ModbusResponse error={self.isError()} registers={self.registers} exception={self.get_exception()}>"
+        return f"<ModbusResponse error={self.is_error} registers={self.registers} exception={self.get_exception()}>"
 
 
 class ModbusResponseError(ModbusResponse):
-    """Represents an error condition."""
+    """Wrapper for Modbus error response."""
 
     __slots__ = ("_exception",)
 
@@ -88,6 +95,16 @@ class ModbusResponseError(ModbusResponse):
         """Initialize a ModbusResponseError with an exception."""
         self._exception = exception
         super().__init__(None)
+
+    @property
+    def is_error(self) -> bool:
+        """Return True if the response indicates an error."""
+        return True
+
+    @property
+    def error(self) -> str:
+        """Return the error string."""
+        return str(self._exception)
 
     def isError(self) -> bool:  # pylint: disable=invalid-name
         """Return True if the response indicates an error."""
@@ -123,9 +140,9 @@ class ModbusClientWrapper:
                     timeout=5,
                 )
             else:
-                self._client = ModbusSerialClient(port=serial_port, baudrate=baudrate, timeout=5)
+                self._client = ModbusSerialClient(port=serial_port, baudrate=baudrate, timeout=10)
         elif host is not None:
-            self._client = ModbusTcpClient(host=host, port=port, timeout=5)
+            self._client = ModbusTcpClient(host=host, port=port, timeout=10)
         else:
             raise ValueError("Either host or serial_port must be provided")
 
@@ -157,6 +174,10 @@ class ModbusClientWrapper:
                 device_kw = self._get_device_id_param_name(device_id)
 
                 resp = self._client.read_holding_registers(address=address, count=count, **device_kw)  # type: ignore[arg-type]
+                
+                # Add a small delay to give the inverter time to breathe
+                time.sleep(0.2)
+                
                 return ModbusResponse(resp)
             except (ModbusIOException, ConnectionException, ModbusException) as exc:
                 self._connected = False
@@ -176,6 +197,31 @@ class ModbusClientWrapper:
         if IS_PRIOR_TO_V3_10_0:
             return {"slave": device_id}  # 3.1.1 → 3.9.x
         return {"device_id": device_id}  # 3.10+
+
+    # ---- Sync write ----
+    def write_register(self, address: int, value: int, device_id: int) -> ModbusResponse:
+        """Write to a single register in a thread-safe way."""
+        with self._lock:
+            try:
+                self._ensure_connected()
+                device_kw = self._get_device_id_param_name(device_id)
+                result = ModbusResponse(self._client.write_registers(address=address, values=[value], **device_kw))
+                
+                # Add a small delay to give the inverter time to breathe
+                time.sleep(0.2)
+                
+                if result.is_error:
+                    _LOGGER.error("Failed to write to register %d: %s", address, result.error)
+                return result
+            except (ModbusIOException, ConnectionException, ModbusException) as exc:
+                self._connected = False
+                return ModbusResponseError(exc)
+
+    # ---- Async helper ----
+    async def async_write_register(self, address: int, value: int, device_id: int) -> ModbusResponse:
+        """Async wrapper for write_register."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.write_register, address, value, device_id)
 
     # ---- Close client ----
     def close(self) -> None:

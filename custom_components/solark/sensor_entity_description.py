@@ -11,8 +11,10 @@ from homeassistant.const import EntityCategory
 # ----------------------------------
 # Sensor Entity Description
 # ----------------------------------
+from .entity_description import SolArkModbusEntityDescription
+
 @dataclass(kw_only=True, frozen=True)
-class SolArkModbusSensorEntityDescription(SensorEntityDescription):
+class SolArkModbusSensorEntityDescription(SensorEntityDescription, SolArkModbusEntityDescription):
     """A class that describes SolArk sensor entities."""
 
     key: str
