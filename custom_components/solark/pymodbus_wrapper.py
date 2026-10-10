@@ -158,8 +158,9 @@ class ModbusClientWrapper:
 
                 resp = self._client.read_holding_registers(address=address, count=count, **device_kw)  # type: ignore[arg-type]
                 return ModbusResponse(resp)
-            except (ModbusIOException, ConnectionException, ModbusException) as exc:
-                self._connected = False
+            except (ModbusIOException, ConnectionException, ModbusException, OSError) as exc:
+                # Close rather than just clear the flag: connect() is a no-op while pymodbus still holds a socket.
+                self._drop_connection()
                 return ModbusResponseError(exc)
 
     # ---- Async helper ----
@@ -181,7 +182,13 @@ class ModbusClientWrapper:
     def close(self) -> None:
         """Close the underlying client."""
         with self._lock:
-            try:
-                self._client.close()
-            finally:
-                self._connected = False
+            self._drop_connection()
+
+    def _drop_connection(self) -> None:
+        """Close the underlying client. The caller must hold the lock."""
+        try:
+            self._client.close()
+        except Exception:  # noqa: BLE001
+            pass
+        finally:
+            self._connected = False

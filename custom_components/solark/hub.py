@@ -184,6 +184,10 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         if end_register is None:
             end_register = start_register
 
+        # A read in this poll already failed; skip the rest instead of waiting out each timeout.
+        if self.register_map.is_error():
+            return
+
         register_count = end_register.address + end_register.register_length - start_register.address
 
         # Read the registers from the inverter
