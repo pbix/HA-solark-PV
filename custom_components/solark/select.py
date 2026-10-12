@@ -18,7 +18,7 @@ class SolArkModbusSelectEntityDescription(SelectEntityDescription, SolArkModbusE
     """A class that describes SolArk select entities."""
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    hub_name = entry.data[CONF_NAME]
+    hub_name = entry.options.get(CONF_NAME, entry.data[CONF_NAME])
     hub: SolArkModbusHub = hass.data[DOMAIN][hub_name]["hub"]
 
     device_info = DeviceInfo(

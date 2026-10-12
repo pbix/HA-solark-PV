@@ -1094,11 +1094,15 @@ class SolArkRegisterMap(RegisterMap["SolArkRegisterMap"]):
 
     @staticmethod
     def batt_measure_mode_status(register_map: "SolArkRegisterMap", entry: RegisterMapEntry):
+        if register_map.BATT_MEASURE_MODE_RAW.register_value is None:
+            return
         raw: int = int(register_map.BATT_MEASURE_MODE_RAW)
         entry.register_value = BATT_MEASURE_MODE.get(int(raw), "Unknown") if raw is not None else "Unknown"
 
     @staticmethod
     def tou_days_status(register_map: "SolArkRegisterMap", entry: RegisterMapEntry):
+        if entry.register_value is None:
+            return
         raw = int(entry.register_value)
         if not (raw & 0x01):
             entry.register_value = "ALL DAYS OFF"

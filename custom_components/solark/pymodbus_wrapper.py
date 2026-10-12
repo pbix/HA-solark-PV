@@ -26,6 +26,8 @@ import logging
 import threading
 import time
 
+_LOGGER = logging.getLogger(__name__)
+
 import pymodbus
 from packaging import version
 from pymodbus.exceptions import ConnectionException, ModbusException, ModbusIOException
@@ -76,6 +78,15 @@ class ModbusResponse:
 
         # If no 'isError' method, consider it an error if it has no 'registers'
         return not hasattr(self._response, "registers")
+
+    @property
+    def error(self) -> str | None:
+        """Return the error string if the response indicates an error."""
+        if hasattr(self._response, "error_message"):
+            return getattr(self._response, "error_message")
+        if self.is_error:
+            return str(self._response)
+        return None
 
     def get_exception(self) -> Exception | None:
         """Return the exception if the response contains one."""
@@ -214,8 +225,9 @@ class ModbusClientWrapper:
                 if result.is_error:
                     _LOGGER.error("Failed to write to register %d: %s", address, result.error)
                 return result
-            except (ModbusIOException, ConnectionException, ModbusException) as exc:
-                self._connected = False
+            except (ModbusIOException, ConnectionException, ModbusException, OSError) as exc:
+                # Close rather than just clear the flag: connect() is a no-op while pymodbus still holds a socket.
+                self._drop_connection()
                 return ModbusResponseError(exc)
 
     # ---- Async helper ----

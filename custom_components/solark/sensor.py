@@ -18,7 +18,7 @@ from .sensor_entity_description import SolArkModbusSensorEntityDescription
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    hub_name = entry.data[CONF_NAME]
+    hub_name = entry.options.get(CONF_NAME, entry.data[CONF_NAME])
     hub: SolArkModbusHub = hass.data[DOMAIN][hub_name]["hub"]
 
     device_info = DeviceInfo(
@@ -93,8 +93,9 @@ class SolArkConfigInfoSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self):
+        config = {**self._entry.data, **self._entry.options}
         return {
-            "name": self._entry.data.get("name"),
-            "host": self._entry.data.get("host"),
-            "scan_interval": self._entry.data.get("scan_interval"),
+            "name": config.get("name"),
+            "host": config.get("host"),
+            "scan_interval": config.get("scan_interval"),
         }

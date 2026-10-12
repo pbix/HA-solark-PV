@@ -18,7 +18,7 @@ class SolArkModbusNumberEntityDescription(NumberEntityDescription, SolArkModbusE
     """A class that describes SolArk number entities."""
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    hub_name = entry.data[CONF_NAME]
+    hub_name = entry.options.get(CONF_NAME, entry.data[CONF_NAME])
     hub: SolArkModbusHub = hass.data[DOMAIN][hub_name]["hub"]
 
     device_info = DeviceInfo(
@@ -70,7 +70,7 @@ class SolArkNumber(SolArkBaseEntity, NumberEntity):
         """Update the current value."""
         # User defined scaling (e.g. 0.01 for Voltage)
         scale = getattr(self.entity_description, "scale", 1.0)
-        raw_value = int(value / scale)
+        raw_value = int(round(value / scale))
         
         if await self.coordinator.async_write_register(self.entity_description.address, raw_value):
             self.coordinator.data[self.entity_description.key] = value

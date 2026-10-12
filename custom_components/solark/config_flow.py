@@ -122,8 +122,15 @@ class SolArkModbusOptionsFlowHandler(OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=config_schema.get_schema(
-                self.config_entry.data.get(CONF_NAME, DEFAULT_NAME),
-                self.config_entry.data.get(CONF_HOST, DEFAULT_HOST),
-                self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                self.config_entry.options.get(
+                    CONF_NAME, self.config_entry.data.get(CONF_NAME, DEFAULT_NAME)
+                ),
+                self.config_entry.options.get(
+                    CONF_HOST, self.config_entry.data.get(CONF_HOST, DEFAULT_HOST)
+                ),
+                self.config_entry.options.get(
+                    CONF_SCAN_INTERVAL,
+                    self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                ),
             ),
         )

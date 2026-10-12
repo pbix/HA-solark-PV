@@ -4,7 +4,6 @@ from __future__ import annotations
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.device_registry import DeviceInfo
 from .hub import SolArkModbusHub
-from .const import ATTR_MANUFACTURER, DOMAIN
 
 class SolArkBaseEntity(CoordinatorEntity[SolArkModbusHub]):
     """Common base for all SolArk entities."""
