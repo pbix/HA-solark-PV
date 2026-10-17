@@ -75,3 +75,14 @@ GEN_RELAY_STATUS: dict[int, str] = {
     2: "No Connection",
     3: "Closed when Generator is on",
 }
+
+BATT_MEASURE_MODE: dict[int, str] = {
+    0: "Voltage",
+    1: "SOC",
+    2: "No Battery",
+}
+
+TOU_MODE: dict[int, str] = {
+    0: "Disabled",
+    255: "Enabled",
+}
