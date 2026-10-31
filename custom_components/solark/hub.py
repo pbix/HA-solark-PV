@@ -7,7 +7,7 @@ from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .config import ConnectionType, SolArkConfig
-from .const import DEFAULT_MAX_STALE_DATA_AGE, MODBUS_EXCEPTIONS
+from .const import DEFAULT_MAX_STALE_DATA_AGE, MODBUS_EXCEPTIONS, OPTIONAL_READ_RETRY_INTERVAL
 from .pymodbus_wrapper import ModbusClientWrapper, ModbusResponse
 from .register_map import (
     DataType,
@@ -65,6 +65,9 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         self.register_map: SolArkRegisterMap = SolArkRegisterMap()
 
         self.max_stale_data_age = DEFAULT_MAX_STALE_DATA_AGE  # 5 minutes
+
+        # Start address of failed optional ranges -> time after which to retry them
+        self._optional_retry_after: dict[int, datetime] = {}
 
     @callback
     def async_remove_listener(self, update_callback: CALLBACK_TYPE) -> None:
@@ -129,10 +132,13 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         self._process_register_range(self.register_map.GRIDL1N_V, self.register_map.GRIDLMTL1_P)  # R150 - R170
         self._process_register_range(self.register_map.GRIDLMTL2_P, self.register_map.PV3_P)  # R171 - R188
         self._process_register_range(self.register_map.BATT_P, self.register_map.GEN_FREQ)  # R190 - R196
-        self._process_register_range(self.register_map.BATT_MEASURE_MODE_RAW)  # R213
-        self._process_register_range(self.register_map.BATT_CHARGE_CURRENT_LIMIT)  # R230
-        self._process_register_range(self.register_map.TOU_DAYS)  # R248
-        self._process_register_range(self.register_map.TOU1_TIME, self.register_map.TOU6_CHARGE_SELL)  # R250 - R279
+
+        # Settings registers are optional: some inverters/firmware don't answer them,
+        # and that must not take down the realtime sensors.
+        self._process_register_range(self.register_map.BATT_MEASURE_MODE_RAW, optional=True)  # R213
+        self._process_register_range(self.register_map.BATT_CHARGE_CURRENT_LIMIT, optional=True)  # R230
+        self._process_register_range(self.register_map.TOU_DAYS, optional=True)  # R248
+        self._process_register_range(self.register_map.TOU1_TIME, self.register_map.TOU6_CHARGE_SELL, optional=True)  # R250 - R279
 
     def _post_process_register_map_entries(self):
         """Post-process the register map entries after reading the raw values from the inverter."""
@@ -182,8 +188,13 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
 
         return data
 
-    def _process_register_range(self, start_register: RegisterMapEntry, end_register: RegisterMapEntry | None = None):
-        """Read the holding registers and decode the vlues for a range of RegisterMapEntry objects."""
+    def _process_register_range(
+        self, start_register: RegisterMapEntry, end_register: RegisterMapEntry | None = None, optional: bool = False
+    ):
+        """Read the holding registers and decode the vlues for a range of RegisterMapEntry objects.
+
+        A failed optional range leaves its entries unset instead of failing the whole dataset,
+        and is not retried until OPTIONAL_READ_RETRY_INTERVAL has passed."""
 
         if end_register is None:
             end_register = start_register
@@ -192,7 +203,13 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         if self.register_map.is_error():
             return
 
+        if optional:
+            retry_after = self._optional_retry_after.get(start_register.address)
+            if retry_after is not None and datetime.now() < retry_after:
+                return
+
         register_count = end_register.address + end_register.register_length - start_register.address
+        last_address = end_register.address + end_register.register_length - 1
 
         # Read the registers from the inverter
         modbus_response = self._read_holding_registers(address=start_register.address, count=register_count)
@@ -200,11 +217,23 @@ class SolArkModbusHub(DataUpdateCoordinator[dict]):
         # Process the Modbus response and update the register map entries with the decoded values if successful,
         # otherwise set error state on the register map
         if modbus_response.isError():
-            _LOGGER.error(
-                "Processing registers %d-%d failed!", start_register.address, end_register.address + end_register.register_length - 1
-            )
+            if optional:
+                _LOGGER.warning(
+                    "Optional registers %d-%d not available; retrying in %d seconds",
+                    start_register.address,
+                    last_address,
+                    OPTIONAL_READ_RETRY_INTERVAL,
+                )
+                self._optional_retry_after[start_register.address] = datetime.now() + timedelta(
+                    seconds=OPTIONAL_READ_RETRY_INTERVAL
+                )
+                return
+
+            _LOGGER.error("Processing registers %d-%d failed!", start_register.address, last_address)
             self.register_map.set_error()
             return
+
+        self._optional_retry_after.pop(start_register.address, None)
 
         decoder = SolArkBinaryPayloadDecoder.fromRegisters(modbus_response.registers)
 
