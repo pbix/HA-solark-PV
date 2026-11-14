@@ -126,6 +126,47 @@ class ModbusResponseError(ModbusResponse):
         return self._exception
 
 
+# The inverter silently ignores (no reply, no exception) FC3 requests for more
+# than ~21 registers — observed 2026-11 on a Sol-Ark 12K, where reads of 22+
+# registers time out while 21 or fewer always succeed. Larger ranges are split
+# into chunks of this size and stitched back together.
+MAX_REGISTERS_PER_READ = 20
+
+
+class ModbusCombinedResponse(ModbusResponse):
+    """Synthetic successful response holding registers stitched from chunked reads."""
+
+    __slots__ = ("_registers",)
+
+    def __init__(self, registers: list[int]) -> None:
+        """Initialize with the combined register list."""
+        self._registers = registers
+        super().__init__(None)
+
+    @property
+    def registers(self) -> list[int]:
+        """Return the combined list of registers."""
+        return self._registers
+
+    @property
+    def is_error(self) -> bool:
+        """Return False: this wrapper only ever holds successful reads."""
+        return False
+
+    def isError(self) -> bool:  # pylint: disable=invalid-name
+        """Return False: this wrapper only ever holds successful reads."""
+        return False
+
+    @property
+    def error(self) -> None:
+        """Return None: no error."""
+        return None
+
+    def get_exception(self) -> None:
+        """Return None: no exception."""
+        return None
+
+
 class ModbusClientWrapper:
     """Thread-safe and async wrapper for Modbus TCP/Serial."""
 
@@ -177,19 +218,32 @@ class ModbusClientWrapper:
 
     # ---- Sync read ----
     def read_holding_registers(self, address: int, count: int, device_id: int) -> ModbusResponse:
-        """Read holding registers in a thread-safe way."""
+        """Read holding registers in a thread-safe way.
+
+        Ranges larger than MAX_REGISTERS_PER_READ are read in chunks and the
+        register lists stitched together, because the inverter silently drops
+        bigger requests (see MAX_REGISTERS_PER_READ above).
+        """
         with self._lock:
             try:
                 self._ensure_connected()
 
                 device_kw = self._get_device_id_param_name(device_id)
 
-                resp = self._client.read_holding_registers(address=address, count=count, **device_kw)  # type: ignore[arg-type]
-                
-                # Add a small delay to give the inverter time to breathe
-                time.sleep(0.2)
-                
-                return ModbusResponse(resp)
+                registers: list[int] = []
+                for offset in range(0, count, MAX_REGISTERS_PER_READ):
+                    chunk = min(MAX_REGISTERS_PER_READ, count - offset)
+                    resp = self._client.read_holding_registers(address=address + offset, count=chunk, **device_kw)  # type: ignore[arg-type]
+
+                    # Add a small delay to give the inverter time to breathe
+                    time.sleep(0.2)
+
+                    wrapped = ModbusResponse(resp)
+                    if wrapped.is_error or count <= MAX_REGISTERS_PER_READ:
+                        return wrapped
+                    registers.extend(wrapped.registers or [])
+
+                return ModbusCombinedResponse(registers)
             except (ModbusIOException, ConnectionException, ModbusException, OSError) as exc:
                 # Close rather than just clear the flag: connect() is a no-op while pymodbus still holds a socket.
                 self._drop_connection()
